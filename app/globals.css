@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+}
+
+@theme inline {
+  --font-jetbrains: var(--font-JetBrainsMono);
+  --color-blue2Custom: #4fc1ff;
+  --color-orangeCustom: rgba(255, 152, 34, 0.75);
+  --color-redCustom: #ef4444;
+  --color-purpleCustom: #8b5cf6;
+}
+
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+} */
+
+.bg-custom-gradient {
+  background-image: linear-gradient(to right, #ef4444, #8b5cf6, #3b82f6);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
