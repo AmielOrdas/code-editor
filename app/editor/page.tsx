@@ -1,13 +1,27 @@
 "use client";
+import CodeEditor from "@/components/CodeEditor";
 import AnimationWrapper from "@/components/PageAnimationWrapper";
-import { useState } from "react";
+import ProgLanguageSelector from "@/components/ProgLanguageSelector";
+
+import { useState, useEffect } from "react";
 
 export default function ResizableLayout() {
   const [sidebarWidth, setSidebarWidth] = useState(300); // px
-  const [topHeight, setTopHeight] = useState(900); // px
+  const [topHeight, setTopHeight] = useState(700); // px
+  const [language, setLanguage] = useState("javascript");
+
+  const [rightSideWidth, setRightSideWidth] = useState<number>(0); // New state for right-side width
+
+  useEffect(() => {
+    setRightSideWidth(window.innerWidth - sidebarWidth);
+  }, [sidebarWidth]);
 
   function onSideBarResize(e: MouseEvent) {
-    setSidebarWidth(e.clientX);
+    if (e.clientX > 100) {
+      setSidebarWidth((prevSideBarWidth) => (prevSideBarWidth = e.clientX));
+    } else {
+      setSidebarWidth((prevSideBarWidth) => (prevSideBarWidth = 0));
+    }
   }
 
   function onBottomBarResize(e: MouseEvent) {
@@ -34,29 +48,34 @@ export default function ResizableLayout() {
     window.addEventListener("mouseup", onMouseUp);
   }
 
+  function onSelectLanguage(language: string) {
+    setLanguage(language);
+  }
+
   return (
     <AnimationWrapper>
       <div className="flex h-screen w-screen bg-[#121212]">
         {/* Sidebar */}
-        <div
-          className="min-w-[300px] max-w-[500px]"
-          style={{ width: `${sidebarWidth}px` }}
-        >
+        <div className="max-w-[500px]" style={{ width: `${sidebarWidth}px` }}>
           {/* Left Sidebar */}
         </div>
 
         {/* Draggable vertical resizer */}
         <div
           onMouseDown={handleSidebarResize}
-          className="cursor-col-resize bg-white"
-          style={{ width: "4px" }}
+          className="cursor-col-resize bg-gray-400 transition-colors hover:bg-gray-300"
+          style={{ width: "8px" }}
         />
 
         {/* Right side (top + bottom) */}
-        <div className="flex flex-col flex-grow">
+        <div
+          className="flex flex-col flex-grow  "
+          style={{ width: `${rightSideWidth}px` }}
+        >
           {/* Top Section */}
-          <div className="min-h-[50px]" style={{ height: `${topHeight}px` }}>
+          <div className="min-h-[200px]" style={{ height: `${topHeight}px` }}>
             {/* Top Section */}
+            <CodeEditor height={topHeight} />
           </div>
 
           {/* Draggable horizontal resizer */}
@@ -67,7 +86,12 @@ export default function ResizableLayout() {
           />
 
           {/* Bottom Section */}
-          <div>{/* Bottom Section */}</div>
+          <div>
+            <ProgLanguageSelector
+              language={language}
+              onSelectLanguage={onSelectLanguage}
+            />
+          </div>
         </div>
       </div>
     </AnimationWrapper>

@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import MultiCardLayout from "../components/Multicard";
 import WelcomeArea from "../components/WelcomeArea";
 import AnimationWrapper from "@/components/PageAnimationWrapper";
+import Footer from "@/components/Footer";
 export default function Home() {
   return (
     <AnimationWrapper>
@@ -9,6 +10,7 @@ export default function Home() {
         <Navbar />
         <WelcomeArea />
         <MultiCardLayout />
+        <Footer />
       </div>
     </AnimationWrapper>
   );
