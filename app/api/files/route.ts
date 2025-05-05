@@ -5,53 +5,69 @@ import sql from "@/lib/db";
 // POST method to create a new file
 export async function POST(req: Request) {
   try {
-    const { name, folder_id, content } = await req.json(); // Get data from the request body
+    const { name, folder_id, content, extension } = await req.json(); // Get data from the request body
 
     // Validate input
-    if (!name || !folder_id) {
-      return NextResponse.json(
-        { message: "File name and folder ID are required" },
-        { status: 400 }
-      );
+    if (!name) {
+      return NextResponse.json({ message: "File is required" }, { status: 400 });
     }
 
     // Insert the new file into the database
     const result = await sql`
-      INSERT INTO files (id, name, folder_id, content,deleted_at )
-      VALUES ($${name}, ${folder_id}, ${content || ""}, NOW() + INTERVAL '30 minutes'
-      RETURNING *;
-    `;
+    INSERT INTO files (name, folder_id, content, extension, deleted_at)
+    VALUES (
+    ${name}, 
+    ${folder_id}, 
+    ${content || ""}, 
+    ${extension}, 
+    NOW() + INTERVAL '30 minutes'
+    )
+    RETURNING *;
+`;
 
     // If successful, return the created file
     return NextResponse.json({ newFile: result[0] }, { status: 201 });
   } catch (error: unknown) {
     // Handle any errors and send an error response
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { message: error.message || "Internal Server Error" },
-        { status: 500 }
-      );
+
+    if (error instanceof Error && typeof error === "object" && "constraint" in error) {
+      if (error.constraint === "unique_file_name_when_no_folder") {
+        return NextResponse.json(
+          { message: "A file with that name already exists at the same level." },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json({ message: "Unknown error occurred" }, { status: 500 });
   }
 }
 
-// PATCH method to update file name and file content/code
+// PATCH method to update file name , file extension and file content/code
 export async function PATCH(req: Request) {
   try {
-    const { id, name, content } = await req.json();
+    const { id, name, content, extension } = await req.json();
 
     if (!id) {
       return NextResponse.json({ message: "File ID is required" }, { status: 400 });
+    } else if (!name) {
+      return NextResponse.json({ message: "File name is required" }, { status: 400 });
+    } else if (!extension) {
+      return NextResponse.json(
+        { message: "File extension is required" },
+        { status: 400 }
+      );
     }
+
+    const safeContent = content ?? ""; // If content is null or undefined, it will default to an empty string
 
     // Update file name and content if provided
     const result = await sql`
       UPDATE files 
       SET 
         name = COALESCE(${name}, name),
-        content = COALESCE(${content}, content),
+        content = COALESCE(${safeContent}, content),
+        extension = COALESCE(${extension}, extension),
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *;

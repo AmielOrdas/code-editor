@@ -6,13 +6,41 @@ import Image from "next/image";
 import LogoBlack from "@/public/LogoBlack.png";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FilePlus, FolderPlusIcon } from "lucide-react";
-
-function NavbarEditor({
+import { useDispatch } from "react-redux";
+import {
   setIsFileInputVisible,
+  setIsFolderInputVisible,
+  setFileName,
+  setFolderName,
+} from "@/lib/redux/slice";
+/*
+{
+  setIsFileInputVisible,
+  setIsFolderInputVisible,
+  setFileName,
+  setFolderName,
 }: {
   setIsFileInputVisible: (value: boolean) => void;
-}) {
+  setIsFolderInputVisible: (value: boolean) => void;
+  setFileName: (value: string) => void;
+  setFolderName: (value: string) => void;
+} 
+*/
+
+function NavbarEditor() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  function handleFilePlusClick() {
+    dispatch(setIsFileInputVisible(true));
+    dispatch(setIsFolderInputVisible(false));
+    dispatch(setFolderName(""));
+  }
+
+  function handleFolderPlusClick() {
+    dispatch(setIsFolderInputVisible(true));
+    dispatch(setIsFileInputVisible(false));
+    dispatch(setFileName(""));
+  }
 
   return (
     <div className={` flex items-center  justify-between p-4 bg-custom-gradient`}>
@@ -23,11 +51,8 @@ function NavbarEditor({
       <Image src={LogoBlack} alt={""} width={40} height={40} />
       {/* Right Buttons */}
       <div className="flex space-x-3">
-        <FolderPlusIcon className="cursor-pointer" />
-        <FilePlus
-          className="cursor-pointer"
-          onClick={() => setIsFileInputVisible(true)}
-        />
+        <FolderPlusIcon className="cursor-pointer" onClick={handleFolderPlusClick} />
+        <FilePlus className="cursor-pointer" onClick={handleFilePlusClick} />
       </div>
     </div>
   );

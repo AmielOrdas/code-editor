@@ -24,11 +24,13 @@ export async function POST(req: Request, res: Response) {
 
     return NextResponse.json({ newFolder: result[0] }, { status: 201 });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { message: error.message || "Internal Server Error" },
-        { status: 500 }
-      );
+    if (error instanceof Error && typeof error === "object" && "constraint" in error) {
+      if (error.constraint === "unique_root_folder_names") {
+        return NextResponse.json(
+          { message: "A folder with that name already exists in this same level." },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json({ message: "Unknown error occurred" }, { status: 500 });
@@ -62,11 +64,13 @@ export async function PATCH(req: Request, res: Response) {
 
     return NextResponse.json({ updatedFolder: result[0] }, { status: 200 });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { message: error.message || "Internal Server Error" },
-        { status: 500 }
-      );
+    if (error instanceof Error && typeof error === "object" && "constraint" in error) {
+      if (error.constraint === "unique_root_folders_names") {
+        return NextResponse.json(
+          { message: "A folder with that name already exists in this same level." },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json({ message: "Unknown error occurred" }, { status: 500 });

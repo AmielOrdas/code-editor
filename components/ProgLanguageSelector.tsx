@@ -68,7 +68,6 @@ export default function ProgLanguageSelector({}: {}) {
       console.error("Error executing code:", error);
     }
   }
-  console.log(typeof code);
 
   return (
     <div className="flex space-x-5">
