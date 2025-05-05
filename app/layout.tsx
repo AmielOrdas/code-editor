@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { JetBrains_Mono } from "next/font/google";
+import ReduxProvider from "@/components/wrappers/Redux";
 
 const JetBrainsFont = JetBrains_Mono({
   subsets: ["cyrillic"],
@@ -21,7 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${JetBrainsFont.variable}`}>{children}</body>
+      <body className={`${JetBrainsFont.variable}`}>
+        <ReduxProvider>{children}</ReduxProvider>
+      </body>
     </html>
   );
 }

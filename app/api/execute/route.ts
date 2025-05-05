@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { language, version, sourceCode } = body;
+    const { language, version, code } = body;
 
-    if (!language || !version || !sourceCode) {
+    if (!language || !version || !code) {
       return NextResponse.json(
-        { message: "Missing required fields: language, version, sourceCode" },
+        { message: "Missing required fields: language, version, code" },
         { status: 400 }
       );
     }
@@ -22,15 +22,16 @@ export async function POST(req: NextRequest) {
       version: version,
       files: [
         {
-          content: sourceCode,
+          content: code,
         },
       ],
     };
 
     const response = await axios.post(PISTON_EXECUTE_URL, payload);
+    const { run } = response.data;
 
     return NextResponse.json({
-      data: response.data,
+      data: run,
       message: "Code Execution Successful",
     });
   } catch (error) {
