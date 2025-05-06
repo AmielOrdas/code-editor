@@ -17,6 +17,10 @@ import {
   setFiles,
   setIsFileInputVisible,
   setIsFileInputSubmitting,
+  setIsSubFolderInputVisible,
+  setSubFolderParentId,
+  setSubFolderName,
+  setSubFolderError,
 } from "@/lib/redux/slice";
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -24,7 +28,7 @@ import { RootState } from "@/lib/redux/store";
 import NavbarEditor from "@/components/NavbarEditor";
 import Files from "@/components/Files";
 import FilesInput from "@/components/FileInput";
-import FoldersInput from "@/components/FolderInput";
+import FolderInput from "@/components/FolderInput";
 import Folders from "@/components/Folders";
 
 export default function ResizableLayout() {
@@ -57,6 +61,7 @@ export default function ResizableLayout() {
     (state: RootState) => state.folder.isInputVisible
   );
   const folders = useSelector((state: RootState) => state.folder.folders);
+  const selectedFolderId = useSelector((state: any) => state.folder.selectedFolderId);
 
   // States needed for files
   const fileName = useSelector((state: RootState) => state.file.name);
@@ -64,6 +69,11 @@ export default function ResizableLayout() {
   const isSubmitting = useSelector((state: RootState) => state.file.isSubmitting);
   const isFileInputVisible = useSelector((state: RootState) => state.file.isInputVisible);
   const files = useSelector((state: RootState) => state.file.files);
+
+  const isSubFolderInputVisible = useSelector(
+    (state: RootState) => state.subFolder.isSubFolderInputVisible
+  ); // Get visibility from Redux
+
   const dispatch = useDispatch();
 
   // const [files, setFiles] = useState<TFiles[] | []>([]);
@@ -143,7 +153,7 @@ export default function ResizableLayout() {
     }
   }
 
-  async function handleAddFolder() {
+  async function handleAddFolder(name: string, parentId: string | null) {
     if (isSubmitting) return; // Prevent multiple submissions
 
     dispatch(setIsFolderInputSubmitting(true));
@@ -156,23 +166,27 @@ export default function ResizableLayout() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: folderName,
-          parent_id: null, // Pass the parent folder ID if you have one
+          name: name,
+          parent_id: parentId || null,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        dispatch(setFolderName("")); // Clear the input
-        dispatch(setIsFolderInputVisible(false)); // Hide the input field after successful creation
+        dispatch(setFolderName("")); // Clear the folder input
+        dispatch(setIsFolderInputVisible(false)); // Hide the folder input field after successful creation
+        dispatch(setSubFolderName("")); // Clear the folder input
+        dispatch(setIsSubFolderInputVisible(false)); // Hide the subfolder input field after successful creation
         fetchFolders(); // Refetch the folders to show in the sidebar
       } else {
         dispatch(setFolderError(data.message || "Error creating folder"));
+        dispatch(setSubFolderError(data.message || "Error creating folder"));
       }
     } catch (error) {
       console.error("Error creating folder:", error);
       dispatch(setFolderError("An error occurred while creating the folder."));
+      dispatch(setSubFolderError("An error occurred while creating the folder."));
     }
 
     dispatch(setIsFolderInputSubmitting(false));
@@ -193,7 +207,7 @@ export default function ResizableLayout() {
         },
         body: JSON.stringify({
           name: fileName,
-          folder_id: null, // You can pass the actual folder ID here
+          folder_id: selectedFolderId || null, // null means root folder
           content: "", // Assuming content is empty for now
           extension: extension,
         }),
@@ -366,7 +380,7 @@ export default function ResizableLayout() {
               <p className="text-gray-500">No folders available</p>
             )}
           </div> */}
-          <Folders />
+          <Folders handleAddFolder={handleAddFolder} />
           {/* Show the input field when FolderPlus is clicked */}
           {/* {isFolderInputVisible && (
             <div className="mt-4">
@@ -388,7 +402,7 @@ export default function ResizableLayout() {
             </div>
           )} */}
           <FilesInput handleAddFile={handleAddFile} />
-          <FoldersInput handleAddFolder={handleAddFolder} />
+          {isSubFolderInputVisible || <FolderInput handleAddFolder={handleAddFolder} />}
           {/* Show the input field when FilePlus is clicked */}
           {/* {isFileInputVisible && (
             <div className="mt-4">

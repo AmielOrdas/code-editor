@@ -6,13 +6,15 @@ import Image from "next/image";
 import LogoBlack from "@/public/LogoBlack.png";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FilePlus, FolderPlusIcon } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   setIsFileInputVisible,
   setIsFolderInputVisible,
   setFileName,
   setFolderName,
+  setIsSubFolderInputVisible,
 } from "@/lib/redux/slice";
+import { RootState } from "@/lib/redux/store";
 /*
 {
   setIsFileInputVisible,
@@ -29,7 +31,11 @@ import {
 
 function NavbarEditor() {
   const router = useRouter();
+  const selectedFolderId = useSelector(
+    (state: RootState) => state.folder.selectedFolderId
+  ); // Get selected folder ID
   const dispatch = useDispatch();
+
   function handleFilePlusClick() {
     dispatch(setIsFileInputVisible(true));
     dispatch(setIsFolderInputVisible(false));
@@ -37,9 +43,19 @@ function NavbarEditor() {
   }
 
   function handleFolderPlusClick() {
-    dispatch(setIsFolderInputVisible(true));
-    dispatch(setIsFileInputVisible(false));
-    dispatch(setFileName(""));
+    console.log(selectedFolderId);
+    if (selectedFolderId) {
+      dispatch(setIsSubFolderInputVisible(true));
+      dispatch(setIsFolderInputVisible(false));
+      dispatch(setFolderName(""));
+
+      dispatch(setIsFileInputVisible(false));
+      dispatch(setFileName(""));
+    } else {
+      dispatch(setIsFolderInputVisible(true));
+      dispatch(setIsFileInputVisible(false));
+      dispatch(setFileName(""));
+    }
   }
 
   return (

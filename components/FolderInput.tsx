@@ -13,7 +13,7 @@ import {
 export default function FolderInput({
   handleAddFolder,
 }: {
-  handleAddFolder: () => void;
+  handleAddFolder: (name: string, parentId: string | null) => void;
 }) {
   const dispatch = useDispatch();
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +69,7 @@ export default function FolderInput({
       dispatch(setIsFolderInputVisible(false));
       return;
     }
+    handleAddFolder(folderName, null);
   }
 
   function handleFolderKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -78,7 +79,7 @@ export default function FolderInput({
       return;
       // Add file if user press enter without any errors
     } else if (event.key === "Enter" && !folderError) {
-      handleAddFolder(); // Create file when Enter key is pressed
+      handleAddFolder(folderName, null); // Create file when Enter key is pressed
     }
   }
 

@@ -11,13 +11,29 @@ type TFiles = {
   extension: string;
 };
 
-type TFolders = {
+type TFolder = {
   id: string;
   name: string;
+  parent_id: string | null;
 };
 
+// type SubfolderState = {
+//   subFolderName: string;
+//   subFolderError: string;
+//   isSubFolderInputVisible: boolean;
+//   isSubFolderInputSubmitting: boolean;
+//   parentId: string | null; // Ensure parentId can be either string or null
+// };
+
+// const subFolderInitialState: SubfolderState = {
+//   subFolderName: "",
+//   subFolderError: "",
+//   isSubFolderInputVisible: false,
+//   isSubFolderInputSubmitting: false,
+//   parentId: null, // Initially set to null, since no parent is selected
+// };
+
 // Language slice
-// In slice.ts
 const languageSlice = createSlice({
   name: "language",
   initialState: {
@@ -104,7 +120,8 @@ const folderSlice = createSlice({
     error: "",
     isInputVisible: false,
     isSubmitting: false,
-    folders: [] as TFolders[],
+    folders: [] as TFolder[],
+    selectedFolderId: "", // Track the selected folder
   },
   reducers: {
     setFolderName(state, action: PayloadAction<string>) {
@@ -119,8 +136,39 @@ const folderSlice = createSlice({
     setIsFolderInputVisible(state, action: PayloadAction<boolean>) {
       state.isInputVisible = action.payload;
     },
-    setFolders(state, action: PayloadAction<TFolders[]>) {
+    setFolders(state, action: PayloadAction<TFolder[]>) {
       state.folders = action.payload;
+    },
+    setSelectedFolderId(state, action: PayloadAction<string>) {
+      state.selectedFolderId = action.payload;
+    },
+  },
+});
+
+const subfolderSlice = createSlice({
+  name: "subfolder",
+  initialState: {
+    subFolderName: "",
+    subFolderError: "",
+    isSubFolderInputVisible: false,
+    isSubFolderInputSubmitting: false,
+    parentId: <string | null>null, // Initially set to null, since no parent is selected
+  },
+  reducers: {
+    setSubFolderName(state, action: PayloadAction<string>) {
+      state.subFolderName = action.payload;
+    },
+    setSubFolderError(state, action: PayloadAction<string>) {
+      state.subFolderError = action.payload;
+    },
+    setIsSubFolderInputVisible(state, action: PayloadAction<boolean>) {
+      state.isSubFolderInputVisible = action.payload;
+    },
+    setSubFolderParentId(state, action: PayloadAction<string | null>) {
+      state.parentId = action.payload;
+    },
+    setIsSubFolderInputSubmitting(state, action: PayloadAction<boolean>) {
+      state.isSubFolderInputSubmitting = action.payload;
     },
   },
 });
@@ -167,6 +215,7 @@ export const {
   setIsFolderInputVisible,
   setFolders,
   setIsFolderInputSubmitting,
+  setSelectedFolderId,
 } = folderSlice.actions;
 export const {
   setFileName,
@@ -175,6 +224,13 @@ export const {
   setIsFileInputSubmitting,
   setFiles,
 } = fileSlice.actions;
+
+export const {
+  setSubFolderName,
+  setSubFolderError,
+  setIsSubFolderInputVisible,
+  setSubFolderParentId,
+} = subfolderSlice.actions;
 
 export const rootReducer = {
   language: languageSlice.reducer,
@@ -186,4 +242,5 @@ export const rootReducer = {
   runData: runDataSlice.reducer,
   folder: folderSlice.reducer,
   file: fileSlice.reducer,
+  subFolder: subfolderSlice.reducer,
 };
