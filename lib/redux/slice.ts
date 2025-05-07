@@ -1,14 +1,16 @@
 // redux/slice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type TLanguages = {
+type TLanguage = {
   language: string;
   version: string;
 };
-type TFiles = {
+type TFile = {
   id: string;
   name: string;
   extension: string;
+  folder_id: string | null;
+  content: string;
 };
 
 type TFolder = {
@@ -43,7 +45,7 @@ const languageSlice = createSlice({
     },
   },
   reducers: {
-    setLanguage(state, action: PayloadAction<TLanguages>) {
+    setLanguage(state, action: PayloadAction<TLanguage>) {
       state.value = action.payload;
     },
   },
@@ -52,9 +54,9 @@ const languageSlice = createSlice({
 // Languages slice
 const languagesSlice = createSlice({
   name: "languages",
-  initialState: { value: [] as TLanguages[] },
+  initialState: { value: [] as TLanguage[] },
   reducers: {
-    setLanguages(state, action: PayloadAction<TLanguages[]>) {
+    setLanguages(state, action: PayloadAction<TLanguage[]>) {
       state.value = action.payload;
     },
   },
@@ -95,10 +97,16 @@ const rightSideWidthSlice = createSlice({
 // Code slice
 const codeSlice = createSlice({
   name: "code",
-  initialState: { value: "" },
+  initialState: { value: "", isRunning: false, isSaving: false },
   reducers: {
     setCode(state, action: PayloadAction<string>) {
       state.value = action.payload;
+    },
+    setIsRunning(state, action: PayloadAction<boolean>) {
+      state.isRunning = action.payload;
+    },
+    setIsSaving(state, action: PayloadAction<boolean>) {
+      state.isSaving = action.payload;
     },
   },
 });
@@ -120,8 +128,12 @@ const folderSlice = createSlice({
     error: "",
     isInputVisible: false,
     isSubmitting: false,
+    isRenameInputSubmitting: false,
+    renameFolderId: "",
+    renameError: "",
     folders: [] as TFolder[],
     selectedFolderId: "", // Track the selected folder
+    expandedFolders: [] as string[],
   },
   reducers: {
     setFolderName(state, action: PayloadAction<string>) {
@@ -136,11 +148,23 @@ const folderSlice = createSlice({
     setIsFolderInputVisible(state, action: PayloadAction<boolean>) {
       state.isInputVisible = action.payload;
     },
+    setIsFolderRenameInputSubmitting(state, action: PayloadAction<boolean>) {
+      state.isRenameInputSubmitting = action.payload;
+    },
+    setRenameFolderId(state, action: PayloadAction<string>) {
+      state.renameFolderId = action.payload;
+    },
+    setFolderRenameError(state, action: PayloadAction<string>) {
+      state.renameError = action.payload;
+    },
     setFolders(state, action: PayloadAction<TFolder[]>) {
       state.folders = action.payload;
     },
     setSelectedFolderId(state, action: PayloadAction<string>) {
       state.selectedFolderId = action.payload;
+    },
+    setExpandedFolders(state, action: PayloadAction<string[]>) {
+      state.expandedFolders = action.payload;
     },
   },
 });
@@ -180,7 +204,11 @@ const fileSlice = createSlice({
     error: "",
     isInputVisible: false,
     isSubmitting: false,
-    files: [] as TFiles[],
+    renameFileId: "",
+    isRenameInputSubmitting: false,
+    renameError: "",
+    files: [] as TFile[],
+    selectedFileId: "", // Track the selected file
   },
   reducers: {
     setFileName(state, action: PayloadAction<string>) {
@@ -189,14 +217,26 @@ const fileSlice = createSlice({
     setFileError(state, action: PayloadAction<string>) {
       state.error = action.payload;
     },
+    setFileRenameError(state, action: PayloadAction<string>) {
+      state.renameError = action.payload;
+    },
     setIsFileInputVisible(state, action: PayloadAction<boolean>) {
       state.isInputVisible = action.payload;
+    },
+    setRenameFileId(state, action: PayloadAction<string>) {
+      state.renameFileId = action.payload;
     },
     setIsFileInputSubmitting(state, action: PayloadAction<boolean>) {
       state.isSubmitting = action.payload;
     },
-    setFiles(state, action: PayloadAction<TFiles[]>) {
+    setIsFileRenameInputSubmitting(state, action: PayloadAction<boolean>) {
+      state.isSubmitting = action.payload;
+    },
+    setFiles(state, action: PayloadAction<TFile[]>) {
       state.files = action.payload;
+    },
+    setSelectedFileId(state, action: PayloadAction<string>) {
+      state.selectedFileId = action.payload;
     },
   },
 });
@@ -205,7 +245,7 @@ const fileSlice = createSlice({
 export const { setLanguage } = languageSlice.actions;
 export const { setEditorHeight } = editorHeightSlice.actions;
 export const { setRightSideWidth } = rightSideWidthSlice.actions;
-export const { setCode } = codeSlice.actions;
+export const { setCode, setIsRunning, setIsSaving } = codeSlice.actions;
 export const { setSideBarWidth } = sideBarWidthSlice.actions;
 export const { setLanguages } = languagesSlice.actions;
 export const { setRunData } = runDataSlice.actions;
@@ -216,13 +256,22 @@ export const {
   setFolders,
   setIsFolderInputSubmitting,
   setSelectedFolderId,
+  setIsFolderRenameInputSubmitting,
+  setFolderRenameError,
+  setRenameFolderId,
+  setExpandedFolders,
 } = folderSlice.actions;
+
 export const {
   setFileName,
   setFileError,
   setIsFileInputVisible,
   setIsFileInputSubmitting,
   setFiles,
+  setSelectedFileId,
+  setFileRenameError,
+  setIsFileRenameInputSubmitting,
+  setRenameFileId,
 } = fileSlice.actions;
 
 export const {

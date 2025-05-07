@@ -1,32 +1,30 @@
 "use client";
 
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import clsx from "clsx";
 import { RootState } from "@/lib/redux/store";
 import {
   setFolderName,
-  setFolderError,
-  setIsFolderInputVisible,
+  setFolderRenameError,
   setFolders,
-  setIsFolderInputSubmitting,
+  setIsFolderRenameInputSubmitting,
+  setRenameFolderId,
 } from "@/lib/redux/slice";
 import axios from "axios";
 
-export default function FolderInput() {
-  const dispatch = useDispatch();
-  const folderInputRef = useRef<HTMLInputElement>(null);
-
+export default function RenameFolderInput({ folderId }: { folderId?: string }) {
   const folderName = useSelector((state: RootState) => state.folder.name);
-  const folderError = useSelector((state: RootState) => state.folder.error);
-  const isFolderInputVisible = useSelector(
-    (state: RootState) => state.folder.isInputVisible
-  );
+
   const selectedFolderId = useSelector(
     (state: RootState) => state.folder.selectedFolderId
-  ); // Get selected folder ID
+  );
+  const error = useSelector((state: RootState) => state.folder.renameError);
+  const isSubmitting = useSelector(
+    (state: RootState) => state.folder.isRenameInputSubmitting
+  );
 
-  const isSubmitting = useSelector((state: RootState) => state.folder.isSubmitting);
+  const dispatch = useDispatch();
 
   async function fetchFolders() {
     try {
@@ -45,10 +43,10 @@ export default function FolderInput() {
     }
   }
 
-  async function handleAddFolder(name: string, parentId: string | null) {
+  async function handleRenameFolder(name: string) {
     if (isSubmitting) return; // Prevent multiple submissions
 
-    dispatch(setIsFolderInputSubmitting(true));
+    dispatch(setIsFolderRenameInputSubmitting(true));
 
     try {
       // Make the API call to create the folder
@@ -63,31 +61,29 @@ export default function FolderInput() {
       //   }),
       // });
 
-      const response = await axios.post("api/folders", {
-        name: name,
-        parent_id: parentId || null,
+      const response = await axios.patch("api/folders", {
+        id: selectedFolderId,
+        name: folderName,
       });
-
       const data = response.data;
-
-      if (response.status === 201) {
+      if (response.status === 200) {
         dispatch(setFolderName("")); // Clear the folder input
-        dispatch(setIsFolderInputVisible(false)); // Hide the folder input field after successful creation
-        // dispatch(setSubFolderName("")); // Clear the folder input
-        // dispatch(setIsSubFolderInputVisible(false)); // Hide the subfolder input field after successful creation
+        dispatch(setRenameFolderId("")); // Hide the folder input field after successful creation
+
         fetchFolders(); // Refetch the folders to show in the sidebar
       }
     } catch (error: any) {
       console.error("Error creating folder:", error);
       dispatch(
-        setFolderError(
+        setFolderRenameError(
           error.response.data.message || "An error occurred while creating the folder."
         )
       );
       // dispatch(setSubFolderError("An error occurred while creating the folder."));
     }
+    dispatch(setFolderName("")); // Clear the folder input
 
-    dispatch(setIsFolderInputSubmitting(false));
+    dispatch(setIsFolderRenameInputSubmitting(false));
   }
 
   function handleFolderInputChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -97,59 +93,57 @@ export default function FolderInput() {
     // const isValid = /^[a-zA-Z0-9_-]*$/.test(input); // only letters, numbers, hyphens, and underscores
 
     // if (!input.trim()) {
-    //   dispatch(setFolderError("Folder name is required."));
+    //   dispatch(setFolderRenameError("Folder name is required."));
     // } else if (!isValid) {
     //   dispatch(
-    //     setFolderError(
+    //     setFolderRenameError(
     //       "Folder name can only contain letters, numbers, hyphens, and underscores."
     //     )
     //   );
     //   return;
     // } else {
-    //   dispatch(setFolderError(""));
+    //   dispatch(setFolderRenameError(""));
     // }
 
     const input = event.target.value;
     const isValid = /^[a-zA-Z0-9_-]*$/.test(input); // only letters, numbers, hyphens, and underscores are allowed.
     console.log(input);
     dispatch(setFolderName(input));
-    console.log(folderError);
+
     if (!input.trim()) {
-      dispatch(setFolderError(""));
+      dispatch(setFolderRenameError(""));
       return;
     } else if (!isValid) {
       dispatch(
-        setFolderError(
+        setFolderRenameError(
           "Folder name can only contain letters, numbers, dots, hyphens, and underscores."
         )
       );
       return;
     }
-    dispatch(setFolderError("")); // clear error if input is valid
+    dispatch(setFolderRenameError("")); // clear error if input is valid
   }
 
   function handleFolderBlur() {
-    if (folderError || !folderName.trim()) {
-      dispatch(setFolderError(""));
+    if (error || !folderName.trim()) {
+      dispatch(setFolderRenameError(""));
       dispatch(setFolderName(""));
-      dispatch(setIsFolderInputVisible(false));
+      dispatch(setRenameFolderId(""));
       return;
     }
-    handleAddFolder(folderName, selectedFolderId);
+    handleRenameFolder(folderName);
   }
 
   function handleFolderKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" && !folderName.trim()) {
-      dispatch(setFolderError(""));
-      dispatch(setIsFolderInputVisible(false));
+      dispatch(setFolderRenameError(""));
+      dispatch(setRenameFolderId(""));
       return;
       // Add file if user press enter without any errors
-    } else if (event.key === "Enter" && !folderError) {
-      handleAddFolder(folderName, selectedFolderId); // Create file when Enter key is pressed
+    } else if (event.key === "Enter" && !error) {
+      handleRenameFolder(folderName); // Create file when Enter key is pressed
     }
   }
-
-  if (!isFolderInputVisible) return null;
 
   return (
     <div>
@@ -161,13 +155,12 @@ export default function FolderInput() {
         onBlur={handleFolderBlur}
         onKeyDown={handleFolderKeyDown}
         placeholder="Enter folder name"
-        className={clsx("w-full bg-[#121212] text-orangeCustom", {
-          "border-red-500": folderError,
-          "border-white": !folderError,
+        className={clsx("w-full bg-[#121212] text-orangeCustom border", {
+          "border-red-500": error,
+          "border-white": !error,
+          "opacity-50 cursor-not-allowed": isSubmitting,
         })}
-        ref={folderInputRef}
       />
-      <p className="text-red-500 text-sm mt-2">{folderError}</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import sql from "@/lib/db";
+import { sql, rootFolderId } from "@/lib/db";
 
 // POST method for creating folders
 export async function POST(req: Request, res: Response) {
@@ -16,7 +16,7 @@ export async function POST(req: Request, res: Response) {
       INSERT INTO folders (name, parent_id, deleted_at)
       VALUES (
         ${name},
-        ${parent_id || null},
+        ${parent_id || rootFolderId},
         NOW() + INTERVAL '30 minutes'
       )
       RETURNING *;
@@ -24,8 +24,12 @@ export async function POST(req: Request, res: Response) {
 
     return NextResponse.json({ newFolder: result[0] }, { status: 201 });
   } catch (error: unknown) {
+    console.log(error);
     if (error instanceof Error && typeof error === "object" && "constraint" in error) {
-      if (error.constraint === "unique_root_folder_names") {
+      if (
+        error.constraint === "unique_root_folder_names" ||
+        "folders_name_parent_id_key"
+      ) {
         return NextResponse.json(
           { message: "A folder with that name already exists in this same level." },
           { status: 400 }

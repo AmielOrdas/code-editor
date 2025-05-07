@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import sql from "@/lib/db";
+import { sql, rootFolderId } from "@/lib/db";
 
 // POST method to create a new file
 export async function POST(req: Request) {
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     INSERT INTO files (name, folder_id, content, extension, deleted_at)
     VALUES (
     ${name}, 
-    ${folder_id}, 
+    ${folder_id || rootFolderId}, 
     ${content || ""}, 
     ${extension}, 
     NOW() + INTERVAL '30 minutes'
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       if (error.constraint === "unique_file_name_when_no_folder") {
         return NextResponse.json(
           { message: "A file with that name already exists at the same level." },
-          { status: 400 }
+          { status: 409 }
         );
       }
     }

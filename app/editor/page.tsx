@@ -30,6 +30,8 @@ import Files from "@/components/Files";
 import FilesInput from "@/components/FileInput";
 import FolderInput from "@/components/FolderInput";
 import Folders from "@/components/Folders";
+import axios from "axios";
+import FolderTree from "@/components/FolderTree";
 
 export default function ResizableLayout() {
   // const [sidebarWidth, setSideBarWidth] = useState(300); // px
@@ -69,17 +71,18 @@ export default function ResizableLayout() {
   const isSubmitting = useSelector((state: RootState) => state.file.isSubmitting);
   const isFileInputVisible = useSelector((state: RootState) => state.file.isInputVisible);
   const files = useSelector((state: RootState) => state.file.files);
-
+  console.log(isFolderInputVisible);
   const isSubFolderInputVisible = useSelector(
     (state: RootState) => state.subFolder.isSubFolderInputVisible
   ); // Get visibility from Redux
+  const selectedFileId = useSelector((state: RootState) => state.file.selectedFileId);
 
   const dispatch = useDispatch();
 
   // const [files, setFiles] = useState<TFiles[] | []>([]);
 
   const inputFileRef = useRef<HTMLInputElement>(null); // Ref for the input element
-
+  const buttonsRef = useRef<HTMLInputElement>(null);
   // const [folderName, setFolderName] = useState("");
   // const [folders, setFolders] = useState<TFolders[] | []>([]);
   // const [isFolderInputVisible, setIsFolderInputVisible] = useState(false);
@@ -160,33 +163,39 @@ export default function ResizableLayout() {
 
     try {
       // Make the API call to create the folder
-      const response = await fetch("/api/folders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: name,
-          parent_id: parentId || null,
-        }),
+      // const response = await fetch("/api/folders", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({
+      //     name: name,
+      //     parent_id: parentId || null,
+      //   }),
+      // });
+
+      const response = await axios.post("api/folders", {
+        name: name,
+        parent_id: parentId || null,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok) {
+      if (response.status === 201) {
         dispatch(setFolderName("")); // Clear the folder input
         dispatch(setIsFolderInputVisible(false)); // Hide the folder input field after successful creation
-        dispatch(setSubFolderName("")); // Clear the folder input
-        dispatch(setIsSubFolderInputVisible(false)); // Hide the subfolder input field after successful creation
+        // dispatch(setSubFolderName("")); // Clear the folder input
+        // dispatch(setIsSubFolderInputVisible(false)); // Hide the subfolder input field after successful creation
         fetchFolders(); // Refetch the folders to show in the sidebar
-      } else {
-        dispatch(setFolderError(data.message || "Error creating folder"));
-        dispatch(setSubFolderError(data.message || "Error creating folder"));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating folder:", error);
-      dispatch(setFolderError("An error occurred while creating the folder."));
-      dispatch(setSubFolderError("An error occurred while creating the folder."));
+      dispatch(
+        setFolderError(
+          error.response.data.message || "An error occurred while creating the folder."
+        )
+      );
+      // dispatch(setSubFolderError("An error occurred while creating the folder."));
     }
 
     dispatch(setIsFolderInputSubmitting(false));
@@ -200,34 +209,42 @@ export default function ResizableLayout() {
 
     try {
       // Make the API call to create the file
-      const response = await fetch("/api/files", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: fileName,
-          folder_id: selectedFolderId || null, // null means root folder
-          content: "", // Assuming content is empty for now
-          extension: extension,
-        }),
+      // const response = await fetch("/api/files", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({
+      //     name: fileName,
+      //     folder_id: selectedFolderId || null, // null means root folder
+      //     content: "", // Assuming content is empty for now
+      //     extension: extension,
+      //   }),
+      // });
+
+      // const data = await response.json();
+      const response = await axios.post("/api/files", {
+        name: fileName,
+        folder_id: selectedFolderId || null, // null means root folder
+        content: "", // Assuming content is empty for now
+        extension: extension,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = response.data;
+      console.log(response);
+      if (response.status === 201) {
         dispatch(setFileName(""));
         dispatch(setIsFileInputVisible(false));
         fetchFiles();
-      } else {
-        dispatch(
-          setFileError(data.message || "An error occurred while creating the file.")
-        );
       }
-    } catch (error) {
-      console.error("Error creating file:", error);
+    } catch (error: any) {
+      console.error("Error creating file:", error.response.data.message);
 
-      dispatch(setFileError("An error occurred while creating the file."));
+      dispatch(
+        setFileError(
+          error.response.data.message || "An error occured when creating the file"
+        )
+      );
     } finally {
       dispatch(setFileName("")); // Always clear input, success or failure
       dispatch(setIsFileInputSubmitting(false));
@@ -347,10 +364,11 @@ export default function ResizableLayout() {
           style={{ width: `${sideBarWidth}px` }}
         >
           <NavbarEditor
-          // setIsFileInputVisible={setIsFileInputVisible}
-          // setIsFolderInputVisible={setIsFolderInputVisible}
-          // setFileName={setFileName}
-          // setFolderName={setFolderName}
+            buttonsRef={buttonsRef}
+            // setIsFileInputVisible={setIsFileInputVisible}
+            // setIsFolderInputVisible={setIsFolderInputVisible}
+            // setFileName={setFileName}
+            // setFolderName={setFolderName}
           />
           {/*Show the file names here */}
           {/* <div className="file-list mt-4">
@@ -366,7 +384,7 @@ export default function ResizableLayout() {
               <p className="text-gray-500">No files available</p>
             )}
           </div> */}
-          <Files />
+          {/* <Files /> */}
           {/* <div>
             {folders.length > 0 ? (
               <ul>
@@ -380,7 +398,8 @@ export default function ResizableLayout() {
               <p className="text-gray-500">No folders available</p>
             )}
           </div> */}
-          <Folders handleAddFolder={handleAddFolder} />
+          {/* <Folders /> */}
+          <FolderTree buttonsRef={buttonsRef} />
           {/* Show the input field when FolderPlus is clicked */}
           {/* {isFolderInputVisible && (
             <div className="mt-4">
@@ -401,8 +420,8 @@ export default function ResizableLayout() {
               <p className="text-red-500 text-sm mt-2">{folderError}</p>
             </div>
           )} */}
-          <FilesInput handleAddFile={handleAddFile} />
-          {isSubFolderInputVisible || <FolderInput handleAddFolder={handleAddFolder} />}
+          {/* <FilesInput /> */}
+
           {/* Show the input field when FilePlus is clicked */}
           {/* {isFileInputVisible && (
             <div className="mt-4">
@@ -453,7 +472,8 @@ export default function ResizableLayout() {
           <div className="flex flex-col overflow-y-auto max-h-[300px] custom-scroll">
             <ProgLanguageSelector />
             <h1 className="text-white whitespace-pre-wrap break-words p-2">
-              {output || "Click run code to see output"}
+              {output ||
+                (selectedFileId ? "Click run code to see output" : "No File Selected")}
             </h1>
           </div>
         </div>

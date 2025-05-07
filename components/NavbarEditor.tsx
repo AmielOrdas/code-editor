@@ -12,24 +12,16 @@ import {
   setIsFolderInputVisible,
   setFileName,
   setFolderName,
-  setIsSubFolderInputVisible,
+  setRenameFileId,
+  setRenameFolderId,
 } from "@/lib/redux/slice";
 import { RootState } from "@/lib/redux/store";
-/*
-{
-  setIsFileInputVisible,
-  setIsFolderInputVisible,
-  setFileName,
-  setFolderName,
-}: {
-  setIsFileInputVisible: (value: boolean) => void;
-  setIsFolderInputVisible: (value: boolean) => void;
-  setFileName: (value: string) => void;
-  setFolderName: (value: string) => void;
-} 
-*/
 
-function NavbarEditor() {
+function NavbarEditor({
+  buttonsRef,
+}: {
+  buttonsRef: React.RefObject<HTMLDivElement | null>;
+}) {
   const router = useRouter();
   const selectedFolderId = useSelector(
     (state: RootState) => state.folder.selectedFolderId
@@ -40,22 +32,38 @@ function NavbarEditor() {
     dispatch(setIsFileInputVisible(true));
     dispatch(setIsFolderInputVisible(false));
     dispatch(setFolderName(""));
+    dispatch(setFileName(""));
+    dispatch(setRenameFolderId(""));
+    console.log("HELLO");
   }
 
   function handleFolderPlusClick() {
-    console.log(selectedFolderId);
-    if (selectedFolderId) {
-      dispatch(setIsSubFolderInputVisible(true));
-      dispatch(setIsFolderInputVisible(false));
-      dispatch(setFolderName(""));
+    // if (selectedFolderId) {
+    //   console.log(selectedFolderId);
+    //   dispatch(setIsFolderInputVisible(true));
+    //   return;
+    // } else {
+    //   dispatch(setIsFolderInputVisible(true));
+    // }
+    dispatch(setIsFolderInputVisible(true));
 
-      dispatch(setIsFileInputVisible(false));
-      dispatch(setFileName(""));
-    } else {
-      dispatch(setIsFolderInputVisible(true));
-      dispatch(setIsFileInputVisible(false));
-      dispatch(setFileName(""));
-    }
+    dispatch(setIsFileInputVisible(false));
+    dispatch(setRenameFileId(""));
+    dispatch(setRenameFileId(""));
+    dispatch(setRenameFolderId(""));
+
+    // if (selectedFolderId) {
+    //   // dispatch(setIsSubFolderInputVisible(false));
+    //   dispatch(setIsFolderInputVisible(true));
+    //   dispatch(setFolderName(""));
+
+    //   dispatch(setIsFileInputVisible(false));
+    //   dispatch(setFileName(""));
+    // } else {
+    //   dispatch(setIsFolderInputVisible(true));
+    //   dispatch(setIsFileInputVisible(false));
+    //   dispatch(setFileName(""));
+    // }
   }
 
   return (
@@ -66,7 +74,7 @@ function NavbarEditor() {
       </div>
       <Image src={LogoBlack} alt={""} width={40} height={40} />
       {/* Right Buttons */}
-      <div className="flex space-x-3">
+      <div className="flex space-x-3" ref={buttonsRef}>
         <FolderPlusIcon className="cursor-pointer" onClick={handleFolderPlusClick} />
         <FilePlus className="cursor-pointer" onClick={handleFilePlusClick} />
       </div>

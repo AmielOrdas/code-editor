@@ -4,9 +4,15 @@ import React, { useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import clsx from "clsx";
 import { RootState } from "@/lib/redux/store";
-import { setFileName, setFileError, setIsFileInputVisible } from "@/lib/redux/slice";
-
-export default function FileInput({ handleAddFile }: { handleAddFile: () => void }) {
+import {
+  setFileName,
+  setFileError,
+  setIsFileInputVisible,
+  setIsFileInputSubmitting,
+  setFiles,
+} from "@/lib/redux/slice";
+import axios from "axios";
+export default function FileInput() {
   const dispatch = useDispatch();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -14,25 +20,58 @@ export default function FileInput({ handleAddFile }: { handleAddFile: () => void
   const error = useSelector((state: RootState) => state.file.error);
   const isSubmitting = useSelector((state: RootState) => state.file.isSubmitting);
   const isFileInputVisible = useSelector((state: RootState) => state.file.isInputVisible);
-
+  const selectedFolderId = useSelector((state: any) => state.folder.selectedFolderId);
   const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
 
-  // function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-  //   const value = event.target.value;
-  //   dispatch(setFileName(value));
+  async function fetchFiles() {
+    try {
+      const response = await fetch("/api/files");
 
-  //   const isValid = /^[\w\-]+\.[\w]+$/.test(value); // Basic filename.extension check
-  //   if (!value.trim()) {
-  //     dispatch(setFileError("File name is required."));
-  //     return;
-  //   } else if (!isValid) {
-  //     dispatch(setFileError("Invalid file name format (e.g., file.cpp)."));
-  //     return;
-  //   } else {
-  //     dispatch(setFileError(""));
-  //     return;
-  //   }
-  // }
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to fetch files");
+      }
+
+      const { files } = await response.json();
+      dispatch(setFiles(files));
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      dispatch(setFiles([])); // Clear the files in case of an error
+    }
+  }
+  async function handleAddFile() {
+    // You can add extension validation later
+    console.log("File added!");
+    dispatch(setIsFileInputSubmitting(true));
+    const extension = fileName.substring(fileName.lastIndexOf(".") + 1); // Get the extension
+
+    try {
+      const response = await axios.post("/api/files", {
+        name: fileName,
+        folder_id: selectedFolderId || null, // null means root folder
+        content: "", // Assuming content is empty for now
+        extension: extension,
+      });
+
+      const data = response.data;
+      console.log(response);
+      if (response.status === 201) {
+        dispatch(setFileName(""));
+        dispatch(setIsFileInputVisible(false));
+        fetchFiles();
+      }
+    } catch (error: any) {
+      console.error("Error creating file:", error.response.data.message);
+
+      dispatch(
+        setFileError(
+          error.response.data.message || "An error occured when creating the file"
+        )
+      );
+    } finally {
+      dispatch(setIsFileInputSubmitting(false));
+    }
+  }
 
   function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.target.value;
@@ -84,27 +123,20 @@ export default function FileInput({ handleAddFile }: { handleAddFile: () => void
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    // if (event.key === "Enter") {
-    //   // You can trigger file creation logic here or pass it via props
-    //   inputRef.current?.blur();
-    // }
-
-    // Close input and return if user press enter without file name.
     if (event.key === "Enter" && !fileName.trim()) {
       dispatch(setFileError(""));
       dispatch(setFileName(""));
       dispatch(setIsFileInputVisible(false));
       return;
-      // Add file if user press enter without any errors
     } else if (event.key === "Enter" && !error) {
-      handleAddFile(); // Create file when Enter key is pressed
+      handleAddFile();
     }
   }
 
   if (!isFileInputVisible) return null;
 
   return (
-    <div className="mt-4">
+    <div>
       <input
         type="text"
         autoFocus
