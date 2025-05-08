@@ -95,7 +95,7 @@ export async function PATCH(req: Request) {
   }
 }
 // Get all files
-export async function GET(req: Request, res: Response) {
+export async function GET() {
   try {
     const files = await sql`
       SELECT * FROM files 
@@ -113,7 +113,7 @@ export async function GET(req: Request, res: Response) {
   }
 }
 
-export async function DELETE(req: Request, res: Response) {
+export async function DELETE(req: Request) {
   try {
     const body = await req.json();
 

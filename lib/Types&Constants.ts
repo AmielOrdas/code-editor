@@ -1,6 +1,7 @@
 type TLanguage = {
   language: string;
   version: string;
+  runtime: string;
 };
 type TFile = {
   id: string;
@@ -16,6 +17,14 @@ type TFolder = {
   parent_id: string | null;
 };
 const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
+const PISTON_RUNTIMES_URL = "https://emkc.org/api/v2/piston/runtimes";
+const allowedLanguages = ["javascript", "typescript", "python", "java", "c++"];
+const allowedRuntimes = ["node", "bash", "gcc"];
 
 export type { TLanguage, TFile, TFolder };
-export { allowedLanguageExtensions };
+export {
+  allowedLanguageExtensions,
+  PISTON_RUNTIMES_URL,
+  allowedLanguages,
+  allowedRuntimes,
+};

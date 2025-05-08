@@ -10,7 +10,7 @@ import {
   setIsFolderInputVisible,
   setIsFolderInputSubmitting,
 } from "@/lib/redux/slice";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { fetchFolders } from "@/lib/functions";
 import { createFolderSchema } from "@/lib/zod";
 
@@ -56,13 +56,22 @@ export default function FolderInput() {
         dispatch(setIsFolderInputVisible(false)); // Hide the folder
         fetchFolders(dispatch); // Refetch the folders to show in the sidebar
       }
-    } catch (error: any) {
-      console.error("Error creating folder:", error);
-      dispatch(
-        setFolderError(
-          error.response.data.message || "An error occurred while creating the folder."
-        )
-      );
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        // If it's an Axios error, safely access the message
+        console.error("Error creating folder:", error?.response?.data.message);
+
+        dispatch(
+          setFolderError(
+            error?.response?.data.message ||
+              "An error occurred while creating the folder."
+          )
+        );
+      } else {
+        // If it's not an Axios error, handle it differently
+        console.error("Unknown error occurred:", error);
+        dispatch(setFolderError("An unexpected error occurred"));
+      }
     }
 
     dispatch(setIsFolderInputSubmitting(false));

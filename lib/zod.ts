@@ -1,7 +1,6 @@
 // schemas/folderSchema.ts
 import { z } from "zod";
-
-const allowedLanguageExtensions = ["js", "py", "ts", "cpp", "java"] as const;
+import { allowedLanguageExtensions } from "./Types&Constants";
 
 const createFolderSchema = z.object({
   name: z
@@ -70,10 +69,10 @@ const createFileSchema = z.object({
     ),
   folder_id: z.string().optional(),
   content: z.string().optional(),
-  // extension: z.enum(allowedLanguageExtensions),
+
   extension: z
     .string()
-    .refine((ext) => allowedLanguageExtensions.includes(ext.toLowerCase() as any), {
+    .refine((ext: string) => allowedLanguageExtensions.includes(ext.toLowerCase()), {
       message: "Extension not allowed. Use .js, .py, .ts, .cpp, or .java",
     }),
 });
@@ -111,7 +110,7 @@ const renameFileSchema = z.object({
 
   extension: z
     .string()
-    .refine((ext) => allowedLanguageExtensions.includes(ext.toLowerCase() as any), {
+    .refine((ext: string) => allowedLanguageExtensions.includes(ext.toLowerCase()), {
       message: "Extension not allowed. Use .js, .py, .ts, .cpp, or .java",
     }),
   content: z.string().optional(),

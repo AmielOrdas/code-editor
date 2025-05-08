@@ -10,7 +10,7 @@ import {
   setIsFileInputVisible,
   setIsFileInputSubmitting,
 } from "@/lib/redux/slice";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { fetchFiles } from "@/lib/functions";
 
 import { createFileSchema } from "@/lib/zod";
@@ -21,7 +21,9 @@ export default function FileInput() {
   const error = useSelector((state: RootState) => state.file.error);
   const isSubmitting = useSelector((state: RootState) => state.file.isSubmitting);
   const isFileInputVisible = useSelector((state: RootState) => state.file.isInputVisible);
-  const selectedFolderId = useSelector((state: any) => state.folder.selectedFolderId);
+  const selectedFolderId = useSelector(
+    (state: RootState) => state.folder.selectedFolderId
+  );
 
   const dispatch = useDispatch();
 
@@ -59,14 +61,21 @@ export default function FileInput() {
         dispatch(setIsFileInputVisible(false));
         fetchFiles(dispatch);
       }
-    } catch (error: any) {
-      console.error("Error creating file:", error.response.data.message);
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        // If it's an Axios error, safely access the message
+        console.error("Error creating file:", error?.response?.data.message);
 
-      dispatch(
-        setFileError(
-          error.response.data.message || "An error occured when creating the file"
-        )
-      );
+        dispatch(
+          setFileError(
+            error?.response?.data.message || "An error occurred when creating the file"
+          )
+        );
+      } else {
+        // If it's not an Axios error, handle it differently
+        console.error("Unknown error occurred:", error);
+        dispatch(setFileError("An unexpected error occurred"));
+      }
     }
     dispatch(setIsFileInputSubmitting(false));
   }

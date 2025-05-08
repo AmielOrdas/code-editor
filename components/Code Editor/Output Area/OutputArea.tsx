@@ -10,15 +10,15 @@ import {
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
-import axios from "axios";
-import { Button } from "./ui/button";
+import axios, { isAxiosError } from "axios";
+import { Button } from "../../ui/button";
 import Spinner from "./SpinnerComponent";
 import { fetchFiles } from "@/lib/functions";
 import { renameFileSchema } from "@/lib/zod";
 import { TFile, TLanguage } from "@/lib/Types&Constants";
 import { Play, Save } from "lucide-react";
 
-export default function ProgLanguageSelector({}: {}) {
+export default function OutputArea() {
   const languages = useSelector((state: RootState) => state.languages.value);
   const code = useSelector((state: RootState) => state.code.value);
   const selectedFileId = useSelector((state: RootState) => state.file.selectedFileId);
@@ -109,9 +109,20 @@ export default function ProgLanguageSelector({}: {}) {
 
       console.log("File saved successfully:", response.data);
       dispatch(setIsCodeSaved(true));
-    } catch (error: any) {
-      console.error("Failed to save file:", error);
-      dispatch(setCodeSaveError(error.response.data.message));
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        // If it's an Axios error, safely access the message
+        console.error("Failed to save file:", error);
+        dispatch(
+          setCodeSaveError(
+            error.response?.data?.message || "An error occurred while saving the file"
+          )
+        );
+      } else {
+        // If it's not an Axios error, handle it differently
+        console.error("Unknown error occurred:", error);
+        dispatch(setCodeSaveError("An unexpected error occurred"));
+      }
     }
     dispatch(setIsSaving(false));
     setTimeout(() => dispatch(setIsCodeSaved(false)), 2000);

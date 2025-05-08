@@ -1,7 +1,7 @@
 "use client";
-import CodeEditor from "@/components/CodeEditor";
+import CodeEditor from "@/components/Code Editor/Code Editor Area/CodeEditor";
 import AnimationWrapper from "@/components/wrappers/PageAnimation";
-import OutputArea from "@/components/OutputArea";
+import OutputArea from "@/components/Code Editor/Output Area/OutputArea";
 import {
   setSideBarWidth,
   setEditorHeight,
@@ -11,8 +11,8 @@ import {
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
-import NavbarEditor from "@/components/NavbarEditor";
-import FolderTree from "@/components/FolderTree";
+import NavbarEditor from "@/components/Code Editor/SideBar Area/NavbarEditor";
+import FolderTree from "@/components/Code Editor/SideBar Area/FolderTree";
 import { fetchFiles, fetchFolders } from "@/lib/functions";
 import axios from "axios";
 
@@ -43,12 +43,12 @@ export default function ResizableLayout() {
     fetchFolders(dispatch);
     fetchFiles(dispatch);
     getLanguages();
-  }, []); // Empty dependency array to call fetchFolders only once on mount
+  }, [dispatch]); // Empty dependency array to call fetchFolders only once on mount
 
   // Calculates the width of the right side area (editor and output area) everytime the sideBarWidth changes when user uses the vertical resizer.
   useEffect(() => {
     dispatch(setRightSideWidth(window.innerWidth - sideBarWidth));
-  }, [sideBarWidth]);
+  }, [sideBarWidth, dispatch]);
 
   function onSideBarResize(e: MouseEvent) {
     if (e.clientX > 100) {

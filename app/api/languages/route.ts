@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import axios from "axios";
+import {
+  allowedLanguages,
+  allowedRuntimes,
+  PISTON_RUNTIMES_URL,
+  TLanguage,
+} from "@/lib/Types&Constants";
 
-const PISTON_RUNTIMES_URL = "https://emkc.org/api/v2/piston/runtimes";
-const allowedLanguages = ["javascript", "typescript", "python", "java", "c++"];
-const allowedRuntimes = ["node", "bash", "gcc"];
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const response = await axios.get(PISTON_RUNTIMES_URL);
 
     const filteredAllowedLanguages = response.data.filter(
-      (languages: any) =>
+      (languages: TLanguage) =>
         allowedLanguages.includes(languages.language) &&
         (languages.runtime ? allowedRuntimes.includes(languages.runtime) : true)
     );

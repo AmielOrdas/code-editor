@@ -1,6 +1,6 @@
 "use client";
 
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
 import {
@@ -14,7 +14,7 @@ import clsx from "clsx";
 
 import { renameFileSchema } from "@/lib/zod";
 
-export default function RenameInput({ fileId }: { fileId?: string }) {
+export default function RenameInput() {
   const fileName = useSelector((state: RootState) => state.file.name);
 
   const selectedFileId = useSelector((state: RootState) => state.file.selectedFileId);
@@ -81,14 +81,21 @@ export default function RenameInput({ fileId }: { fileId?: string }) {
         dispatch(setRenameFileId(""));
         fetchFiles();
       }
-    } catch (error: any) {
-      console.error("Error creating file:", error.response.data.message);
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        // If it's an Axios error, safely access the message
+        console.error("Error creating file:", error);
 
-      dispatch(
-        setFileRenameError(
-          error.response.data.message || "An error occured when creating the file"
-        )
-      );
+        dispatch(
+          setFileRenameError(
+            error.response?.data?.message || "An error occurred when creating the file"
+          )
+        );
+      } else {
+        // If it's not an Axios error, handle it differently
+        console.error("Unknown error occurred:", error);
+        dispatch(setFileRenameError("An unexpected error occurred"));
+      }
     }
 
     dispatch(setRenameFileId(""));

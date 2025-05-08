@@ -1,6 +1,6 @@
 import { setFiles, setFolders } from "@/lib/redux/slice";
-
-async function fetchFiles(dispatch: Function) {
+import { TDispatch } from "./redux/store";
+async function fetchFiles(dispatch: TDispatch) {
   try {
     const response = await fetch("/api/files");
 
@@ -17,7 +17,7 @@ async function fetchFiles(dispatch: Function) {
   }
 }
 
-async function fetchFolders(dispatch: Function) {
+async function fetchFolders(dispatch: TDispatch) {
   try {
     const response = await fetch("/api/folders");
 

@@ -9,7 +9,7 @@ import {
   setIsFolderRenameInputSubmitting,
   setRenameFolderId,
 } from "@/lib/redux/slice";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { renameFolderSchema } from "@/lib/zod";
 import { fetchFolders } from "@/lib/functions";
 
@@ -54,13 +54,22 @@ export default function RenameFolderInput() {
 
         fetchFolders(dispatch); // Refetch the folders to show in the sidebar
       }
-    } catch (error: any) {
-      console.error("Error creating folder:", error);
-      dispatch(
-        setFolderRenameError(
-          error.response.data.message || "An error occurred while creating the folder."
-        )
-      );
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        // If it's an Axios error, safely access the message
+        console.error("Error creating folder:", error);
+
+        dispatch(
+          setFolderRenameError(
+            error.response?.data?.message ||
+              "An error occurred while creating the folder."
+          )
+        );
+      } else {
+        // If it's not an Axios error, handle it differently
+        console.error("Unknown error occurred:", error);
+        dispatch(setFolderRenameError("An unexpected error occurred"));
+      }
     }
     dispatch(setFolderName("")); // Clear the folder input
 

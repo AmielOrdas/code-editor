@@ -20,11 +20,9 @@ export default function CodeEditor() {
 
   const selectedFileData = files.find((file: TFile) => file.id === selectedFileId);
 
-  console.log(selectedFileData);
-
   useEffect(() => {
     dispatch(setCode(selectedFileData?.content || ""));
-  }, [selectedFileId]);
+  }, [selectedFileId, dispatch]);
 
   const code = useSelector((state: RootState) => state.code.value);
   const isMainFile = selectedFileId === process.env.NEXT_PUBLIC_WELCOME_FILE_ID;

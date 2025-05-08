@@ -19,7 +19,7 @@ import Image from "next/image";
 
 import { TFile } from "@/lib/Types&Constants";
 import { deleteSchema } from "@/lib/zod";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { fetchFiles } from "@/lib/functions";
 
 export default function Files({
@@ -30,7 +30,7 @@ export default function Files({
   level: number;
 }) {
   // Access files from the redux state
-  const files = useSelector((state: any) => state.file.files);
+  const files = useSelector((state: RootState) => state.file.files);
   const nestedFiles = files.filter((f: TFile) => f.folder_id === parentId);
   const selectedFileId = useSelector((state: RootState) => state.file.selectedFileId);
   const renameFileId = useSelector((state: RootState) => state.file.renameFileId);
@@ -95,9 +95,16 @@ export default function Files({
         if (response.status === 200) {
           await fetchFiles(dispatch);
         }
-      } catch (error: any) {
-        const message = error.response?.data?.message || "Error deleting file";
-        alert(message);
+      } catch (error: unknown) {
+        if (isAxiosError(error)) {
+          // If it's an Axios error, access the message safely
+          const message = error?.response?.data.message || "Error deleting file";
+          alert(message);
+        } else {
+          // If it's not an Axios error, handle it differently
+          console.error("Unknown error occurred:", error);
+          alert("An unexpected error occurred");
+        }
       }
     }
   }
@@ -123,7 +130,7 @@ export default function Files({
               >
                 {HandleIcon(file.extension)}
                 {renameFileId === file.id ? (
-                  <RenameFileInput fileId={file.id} />
+                  <RenameFileInput />
                 ) : (
                   <span className="text-orange2Custom">{file.name}</span>
                 )}

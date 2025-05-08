@@ -15,7 +15,7 @@ import RenameFolderInput from "./RenameFolderInput";
 import FileInput from "./FileInput";
 import { TFolder } from "@/lib/Types&Constants";
 import { deleteSchema } from "@/lib/zod";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { fetchFolders } from "@/lib/functions";
 
 export default function Folders({
@@ -84,9 +84,16 @@ export default function Folders({
         if (response.status === 200) {
           await fetchFolders(dispatch); // reload file list
         }
-      } catch (error: any) {
-        const message = error.response?.data?.message || "Error deleting folder";
-        alert(message);
+      } catch (error: unknown) {
+        if (isAxiosError(error)) {
+          // If it's an Axios error, safely access the message
+          const message = error?.response?.data?.message || "Error deleting folder";
+          alert(message);
+        } else {
+          // If it's not an Axios error, handle it differently
+          console.error("Unknown error occurred:", error);
+          alert("An unexpected error occurred");
+        }
       }
     }
   }

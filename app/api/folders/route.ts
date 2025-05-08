@@ -3,7 +3,7 @@ import { sql, rootFolderId } from "@/lib/db";
 import { createFolderSchema, deleteSchema, renameFolderSchema } from "@/lib/zod";
 
 // POST method for creating folders
-export async function POST(req: Request, res: Response) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
 
@@ -46,7 +46,7 @@ export async function POST(req: Request, res: Response) {
 }
 
 // PATCH method to update folder name
-export async function PATCH(req: Request, res: Response) {
+export async function PATCH(req: Request) {
   try {
     const { id, name } = await req.json();
 
@@ -88,7 +88,7 @@ export async function PATCH(req: Request, res: Response) {
 }
 
 // GET method to fetch all folders
-export async function GET(req: Request, res: Response) {
+export async function GET() {
   try {
     const folders = await sql`
       SELECT * FROM folders
@@ -105,7 +105,7 @@ export async function GET(req: Request, res: Response) {
   }
 }
 
-export async function DELETE(req: Request, res: Response) {
+export async function DELETE(req: Request) {
   try {
     const body = await req.json();
 
