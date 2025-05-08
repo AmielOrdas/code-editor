@@ -16,7 +16,7 @@ type TFolder = {
   name: string;
   parent_id: string | null;
 };
-const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
+const allowedLanguageExtensions = ["js", "py", "ts", "cpp", "java"];
 const PISTON_RUNTIMES_URL = "https://emkc.org/api/v2/piston/runtimes";
 const allowedLanguages = ["javascript", "typescript", "python", "java", "c++"];
 const allowedRuntimes = ["node", "bash", "gcc"];
