@@ -1,17 +1,22 @@
 import { NextResponse } from "next/server";
 import { sql, rootFolderId } from "@/lib/db";
+import { createFolderSchema, deleteSchema, renameFolderSchema } from "@/lib/zod";
 
 // POST method for creating folders
 export async function POST(req: Request, res: Response) {
   try {
-    const { name, parent_id } = await req.json();
+    const body = await req.json();
 
-    // Validate input
-    if (!name) {
-      return NextResponse.json({ message: "Folder name is required" }, { status: 400 });
+    const parsed = createFolderSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { message: parsed.error.errors[0].message },
+        { status: 400 }
+      );
     }
 
-    // Insert the new folder
+    const { name, parent_id } = parsed.data;
+
     const result = await sql`
       INSERT INTO folders (name, parent_id, deleted_at)
       VALUES (
@@ -36,7 +41,6 @@ export async function POST(req: Request, res: Response) {
         );
       }
     }
-
     return NextResponse.json({ message: "Unknown error occurred" }, { status: 500 });
   }
 }
@@ -46,9 +50,11 @@ export async function PATCH(req: Request, res: Response) {
   try {
     const { id, name } = await req.json();
 
-    if (!id || !name) {
+    const validationResult = renameFolderSchema.safeParse({ id, name });
+
+    if (!validationResult.success) {
       return NextResponse.json(
-        { message: "Folder ID and name are required" },
+        { message: validationResult.error.errors[0].message },
         { status: 400 }
       );
     }
@@ -95,6 +101,44 @@ export async function GET(req: Request, res: Response) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
+    return NextResponse.json({ message: "Unknown error occurred" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, res: Response) {
+  try {
+    const body = await req.json();
+
+    const parsed = deleteSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const errorMessage = parsed.error.errors[0]?.message;
+
+      // If the issue is due to trying to delete the root folder/file
+      if (errorMessage === "The root folder cannot be deleted") {
+        return NextResponse.json({ message: errorMessage }, { status: 403 });
+      }
+
+      return NextResponse.json({ message: errorMessage }, { status: 400 });
+    }
+
+    const { id } = parsed.data;
+
+    const result = await sql`
+      DELETE FROM folders
+      WHERE id = ${id}
+      RETURNING *;
+    `;
+
+    if (result.length === 0) {
+      return NextResponse.json({ message: "Folder not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ deletedFolder: result[0] }, { status: 200 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
     return NextResponse.json({ message: "Unknown error occurred" }, { status: 500 });
   }
 }

@@ -8,10 +8,11 @@ import {
   setFolderName,
   setFolderError,
   setIsFolderInputVisible,
-  setFolders,
   setIsFolderInputSubmitting,
 } from "@/lib/redux/slice";
 import axios from "axios";
+import { fetchFolders } from "@/lib/functions";
+import { createFolderSchema } from "@/lib/zod";
 
 export default function FolderInput() {
   const dispatch = useDispatch();
@@ -28,54 +29,32 @@ export default function FolderInput() {
 
   const isSubmitting = useSelector((state: RootState) => state.folder.isSubmitting);
 
-  async function fetchFolders() {
-    try {
-      const response = await fetch("/api/folders");
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to fetch folders");
-      }
-
-      const data = await response.json();
-      dispatch(setFolders(data.folders)); // Assuming you have state for storing folders
-    } catch (error) {
-      console.error("Error fetching folders:", error);
-      dispatch(setFolders([])); // Clear folders in case of error
-    }
-  }
-
   async function handleAddFolder(name: string, parentId: string | null) {
     if (isSubmitting) return; // Prevent multiple submissions
 
+    // Validate folder name using Zod schema
+    const result = createFolderSchema.safeParse({
+      name: name,
+      parent_id: parentId,
+    });
+
+    if (!result.success) {
+      // If validation fails, set the error and prevent submission
+      dispatch(setFolderError(result.error.errors[0].message));
+      return;
+    }
     dispatch(setIsFolderInputSubmitting(true));
 
     try {
-      // Make the API call to create the folder
-      // const response = await fetch("/api/folders", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     name: name,
-      //     parent_id: parentId || null,
-      //   }),
-      // });
-
       const response = await axios.post("api/folders", {
         name: name,
         parent_id: parentId || null,
       });
 
-      const data = response.data;
-
       if (response.status === 201) {
         dispatch(setFolderName("")); // Clear the folder input
-        dispatch(setIsFolderInputVisible(false)); // Hide the folder input field after successful creation
-        // dispatch(setSubFolderName("")); // Clear the folder input
-        // dispatch(setIsSubFolderInputVisible(false)); // Hide the subfolder input field after successful creation
-        fetchFolders(); // Refetch the folders to show in the sidebar
+        dispatch(setIsFolderInputVisible(false)); // Hide the folder
+        fetchFolders(dispatch); // Refetch the folders to show in the sidebar
       }
     } catch (error: any) {
       console.error("Error creating folder:", error);
@@ -84,40 +63,25 @@ export default function FolderInput() {
           error.response.data.message || "An error occurred while creating the folder."
         )
       );
-      // dispatch(setSubFolderError("An error occurred while creating the folder."));
     }
 
     dispatch(setIsFolderInputSubmitting(false));
   }
 
   function handleFolderInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-    // const input = event.target.value;
-    // dispatch(setFolderName(input));
-
-    // const isValid = /^[a-zA-Z0-9_-]*$/.test(input); // only letters, numbers, hyphens, and underscores
-
-    // if (!input.trim()) {
-    //   dispatch(setFolderError("Folder name is required."));
-    // } else if (!isValid) {
-    //   dispatch(
-    //     setFolderError(
-    //       "Folder name can only contain letters, numbers, hyphens, and underscores."
-    //     )
-    //   );
-    //   return;
-    // } else {
-    //   dispatch(setFolderError(""));
-    // }
-
     const input = event.target.value;
-    const isValid = /^[a-zA-Z0-9_-]*$/.test(input); // only letters, numbers, hyphens, and underscores are allowed.
-    console.log(input);
     dispatch(setFolderName(input));
-    console.log(folderError);
+
+    // Use Zod's safeParse to validate
+    const result = createFolderSchema.safeParse({
+      name: input,
+      parent_id: selectedFolderId,
+    });
+
     if (!input.trim()) {
       dispatch(setFolderError(""));
       return;
-    } else if (!isValid) {
+    } else if (!result.success) {
       dispatch(
         setFolderError(
           "Folder name can only contain letters, numbers, dots, hyphens, and underscores."

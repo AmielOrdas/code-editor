@@ -17,12 +17,10 @@ import CppIcon from "@/public/File Icons/ISO_C++_Logo.svg-removebg-preview.png";
 import PythonIcon from "@/public/File Icons/Python-logo-notext.svg.png";
 import Image from "next/image";
 
-type TFile = {
-  id: string;
-  name: string;
-  extension: string;
-  folder_id: string | null;
-};
+import { TFile } from "@/lib/Types&Constants";
+import { deleteSchema } from "@/lib/zod";
+import axios from "axios";
+import { fetchFiles } from "@/lib/functions";
 
 export default function Files({
   parentId,
@@ -47,14 +45,14 @@ export default function Files({
   function handleFileClick(fileId: string) {
     dispatch(setSelectedFileId(fileId));
     dispatch(setSelectedFolderId(""));
+    console.log(selectedFileId);
   }
 
   function HandleIcon(extension: string) {
     let icon;
-    console.log(extension);
+
     switch (extension.toLowerCase()) {
       case "py":
-        console.log("PYTHON!");
         icon = <Image src={PythonIcon} alt="" width={20} className="mr-2" />;
         break;
       case "js":
@@ -73,8 +71,35 @@ export default function Files({
         icon = <FileText className="mr-2" />;
         break;
     }
-    console.log(icon);
     return icon;
+  }
+
+  async function handleKeyDown(event: React.KeyboardEvent) {
+    if (event.key === "Delete" || event.key === "Del") {
+      const confirmDelete = window.confirm("Are you sure you want to delete this file?");
+      if (!confirmDelete) return;
+
+      const parsed = deleteSchema.safeParse({ id: selectedFileId });
+
+      if (!parsed.success) {
+        const errorMessage = parsed.error.errors[0]?.message || "Invalid file ID";
+        alert(errorMessage);
+        return;
+      }
+
+      try {
+        const response = await axios.delete("/api/files", {
+          data: { id: selectedFileId },
+        });
+
+        if (response.status === 200) {
+          await fetchFiles(dispatch);
+        }
+      } catch (error: any) {
+        const message = error.response?.data?.message || "Error deleting file";
+        alert(message);
+      }
+    }
   }
 
   return (
@@ -87,14 +112,15 @@ export default function Files({
                 className={clsx("text-white cursor-pointer flex items-center ml-8", {
                   "bg-custom-gradient w-full": file.id === selectedFileId,
                 })}
+                tabIndex={0}
                 onClick={function () {
                   handleFileClick(file.id);
                 }}
                 onDoubleClick={function () {
                   handleFileOnDoubleClick(file.id);
                 }}
+                onKeyDown={handleKeyDown}
               >
-                {/* <FileText className="text-white mr-2" /> */}
                 {HandleIcon(file.extension)}
                 {renameFileId === file.id ? (
                   <RenameFileInput fileId={file.id} />

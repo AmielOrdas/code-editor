@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
@@ -8,27 +7,22 @@ import {
   setFileRenameError,
   setFileName,
   setFiles,
-  setIsFileInputSubmitting,
   setRenameFileId,
   setIsFileRenameInputSubmitting,
 } from "@/lib/redux/slice";
 import clsx from "clsx";
+
+import { renameFileSchema } from "@/lib/zod";
 
 export default function RenameInput({ fileId }: { fileId?: string }) {
   const fileName = useSelector((state: RootState) => state.file.name);
 
   const selectedFileId = useSelector((state: RootState) => state.file.selectedFileId);
   const error = useSelector((state: RootState) => state.file.renameError);
-  const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
+
   const isSubmitting = useSelector(
     (state: RootState) => state.file.isRenameInputSubmitting
   );
-
-  // const isRenameInputVisible = useSelector(
-  //   (state: RootState) => state.file.isRenameInputVisible
-  // );
-
-  // console.log("RENAME FILE INPUT", isRenameInputVisible);
 
   const dispatch = useDispatch();
   async function fetchFiles() {
@@ -53,31 +47,34 @@ export default function RenameInput({ fileId }: { fileId?: string }) {
     console.log("File added!");
     dispatch(setIsFileRenameInputSubmitting(true));
     const extension = fileName.substring(fileName.lastIndexOf(".") + 1); // Get the extension
-    console.log(fileId);
-    try {
-      // Make the API call to create the file
-      // const response = await fetch("/api/files", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     name: fileName,
-      //     folder_id: selectedFolderId || null, // null means root folder
-      //     content: "", // Assuming content is empty for now
-      //     extension: extension,
-      //   }),
-      // });
 
-      // const data = await response.json();
+    // Allow only valid characters: letters, numbers, dots, hyphens, underscores
+    const parsed = renameFileSchema.safeParse({
+      id: selectedFileId,
+      name: fileName,
+      extension: extension,
+    });
+
+    if (!parsed.success) {
+      // Get the first error message
+      const errorMessage = parsed.error.errors[0]?.message;
+
+      if (errorMessage === "File name is required") {
+        dispatch(setFileRenameError(""));
+      } else {
+        dispatch(setFileRenameError(errorMessage));
+      }
+      return;
+    }
+
+    try {
       const response = await axios.patch("/api/files", {
         id: selectedFileId,
         name: fileName,
-        content: "", // Skip updating content
+
         extension: extension,
       });
 
-      const data = response.data;
       console.log(response);
       if (response.status === 200) {
         dispatch(setFileName(""));
@@ -100,43 +97,29 @@ export default function RenameInput({ fileId }: { fileId?: string }) {
   function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.target.value;
     dispatch(setFileName(input));
-
-    // Allow only valid characters: letters, numbers, dots, hyphens, underscores
-    const validNameRegex = /^[a-zA-Z0-9._-]+$/;
-    console.log(selectedFileId);
+    const extension = input.substring(fileName.lastIndexOf(".") + 1); // Get the extension
 
     if (!input.trim()) {
       dispatch(setFileRenameError(""));
       return;
-    } else if (!validNameRegex.test(input)) {
-      dispatch(
-        setFileRenameError("File name must not contain special characters or spaces.")
-      );
-      return;
     }
 
-    const lastDotIndex = input.lastIndexOf(".");
-    const extension = input.substring(lastDotIndex);
-    const baseName = input.substring(0, lastDotIndex).trim();
+    // Allow only valid characters: letters, numbers, dots, hyphens, underscores
+    const parsed = renameFileSchema.safeParse({
+      id: selectedFileId,
+      name: input,
+      extension: extension,
+    });
 
-    if (lastDotIndex === -1) {
-      dispatch(
-        setFileRenameError(
-          "File extension is required (e.g., .js, .py, .ts, .cpp, .java)"
-        )
-      );
-      return;
-    }
+    if (!parsed.success) {
+      // Get the first error message
+      const errorMessage = parsed.error.errors[0]?.message;
 
-    if (!baseName) {
-      dispatch(setFileRenameError("Extension only is not allowed"));
-      return;
-    }
-
-    if (!allowedLanguageExtensions.includes(extension)) {
-      dispatch(
-        setFileRenameError("Extension not allowed. Use .js, .py, .ts, .cpp, or .java")
-      );
+      if (errorMessage === "File name is required") {
+        dispatch(setFileRenameError(""));
+      } else {
+        dispatch(setFileRenameError(errorMessage));
+      }
       return;
     }
 

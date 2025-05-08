@@ -1,4 +1,3 @@
-import React, { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   setExpandedFolders,
@@ -9,16 +8,15 @@ import {
 import { ChevronDown, ChevronRight, FolderDown } from "lucide-react";
 import clsx from "clsx";
 import FolderInput from "./FolderInput";
-import SubFolderInput from "./SubFolderInput";
+
 import { RootState } from "@/lib/redux/store";
-import FolderTree from "./FolderTree";
+
 import RenameFolderInput from "./RenameFolderInput";
 import FileInput from "./FileInput";
-type TFolder = {
-  id: string;
-  name: string;
-  parent_id: string | null;
-};
+import { TFolder } from "@/lib/Types&Constants";
+import { deleteSchema } from "@/lib/zod";
+import axios from "axios";
+import { fetchFolders } from "@/lib/functions";
 
 export default function Folders({
   parentId,
@@ -63,6 +61,36 @@ export default function Folders({
     dispatch(setExpandedFolders(Array.from(expandedFolders))); // Convert to array from set for Redux
   }
 
+  async function handleKeyDown(event: React.KeyboardEvent) {
+    if (event.key === "Delete" || event.key === "Del") {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this folder?"
+      );
+      if (!confirmDelete) return;
+
+      const parsed = deleteSchema.safeParse({ id: selectedFolderId });
+
+      if (!parsed.success) {
+        const errorMessage = parsed.error.errors[0]?.message || "Invalid folder ID";
+        alert(errorMessage);
+        return;
+      }
+
+      try {
+        const response = await axios.delete("/api/folders", {
+          data: { id: selectedFolderId },
+        });
+
+        if (response.status === 200) {
+          await fetchFolders(dispatch); // reload file list
+        }
+      } catch (error: any) {
+        const message = error.response?.data?.message || "Error deleting folder";
+        alert(message);
+      }
+    }
+  }
+
   return (
     <>
       {nestedFolders.map((folder: TFolder) => (
@@ -75,8 +103,10 @@ export default function Folders({
             className={clsx("text-white cursor-pointer flex items-center", {
               "bg-custom-gradient w-full": folder.id === selectedFolderId,
             })}
+            tabIndex={0}
             onClick={() => handleToggleFolder(folder.id)}
             onDoubleClick={() => handleFolderOnDoubleClick(folder.id)}
+            onKeyDown={handleKeyDown}
           >
             {expandedFolders.has(folder.id) ? (
               <ChevronDown className="text-white mr-1" />
@@ -85,7 +115,7 @@ export default function Folders({
             )}
             <FolderDown className="text-white mr-2" />
             {renameFolderId === folder.id ? (
-              <RenameFolderInput folderId={folder.id} />
+              <RenameFolderInput />
             ) : (
               <span className="text-white">{folder.name}</span>
             )}

@@ -12,14 +12,13 @@ function Footer() {
         </h2>
         <div className="flex space-x-4">
           <Popover>
-            <PopoverTrigger>
+            <PopoverTrigger className="flex space-x-4">
               <Facebook />
+              <Twitter />
+              <Youtube />
             </PopoverTrigger>
             <PopoverContent>The icon links are just for visual purposes</PopoverContent>
           </Popover>
-
-          <Twitter />
-          <Youtube />
         </div>
       </div>
       <div className="bg-greenCustom space-y-2 p-15">

@@ -1,39 +1,6 @@
 // redux/slice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-type TLanguage = {
-  language: string;
-  version: string;
-};
-type TFile = {
-  id: string;
-  name: string;
-  extension: string;
-  folder_id: string | null;
-  content: string;
-};
-
-type TFolder = {
-  id: string;
-  name: string;
-  parent_id: string | null;
-};
-
-// type SubfolderState = {
-//   subFolderName: string;
-//   subFolderError: string;
-//   isSubFolderInputVisible: boolean;
-//   isSubFolderInputSubmitting: boolean;
-//   parentId: string | null; // Ensure parentId can be either string or null
-// };
-
-// const subFolderInitialState: SubfolderState = {
-//   subFolderName: "",
-//   subFolderError: "",
-//   isSubFolderInputVisible: false,
-//   isSubFolderInputSubmitting: false,
-//   parentId: null, // Initially set to null, since no parent is selected
-// };
+import { TLanguage, TFile, TFolder } from "../Types&Constants";
 
 // Language slice
 const languageSlice = createSlice({
@@ -97,7 +64,13 @@ const rightSideWidthSlice = createSlice({
 // Code slice
 const codeSlice = createSlice({
   name: "code",
-  initialState: { value: "", isRunning: false, isSaving: false },
+  initialState: {
+    value: "",
+    isRunning: false,
+    isSaving: false,
+    codeError: "",
+    isSaved: false,
+  },
   reducers: {
     setCode(state, action: PayloadAction<string>) {
       state.value = action.payload;
@@ -107,6 +80,12 @@ const codeSlice = createSlice({
     },
     setIsSaving(state, action: PayloadAction<boolean>) {
       state.isSaving = action.payload;
+    },
+    setIsCodeSaved(state, action: PayloadAction<boolean>) {
+      state.isSaved = action.payload;
+    },
+    setCodeSaveError(state, action: PayloadAction<string>) {
+      state.codeError = action.payload;
     },
   },
 });
@@ -169,34 +148,6 @@ const folderSlice = createSlice({
   },
 });
 
-const subfolderSlice = createSlice({
-  name: "subfolder",
-  initialState: {
-    subFolderName: "",
-    subFolderError: "",
-    isSubFolderInputVisible: false,
-    isSubFolderInputSubmitting: false,
-    parentId: <string | null>null, // Initially set to null, since no parent is selected
-  },
-  reducers: {
-    setSubFolderName(state, action: PayloadAction<string>) {
-      state.subFolderName = action.payload;
-    },
-    setSubFolderError(state, action: PayloadAction<string>) {
-      state.subFolderError = action.payload;
-    },
-    setIsSubFolderInputVisible(state, action: PayloadAction<boolean>) {
-      state.isSubFolderInputVisible = action.payload;
-    },
-    setSubFolderParentId(state, action: PayloadAction<string | null>) {
-      state.parentId = action.payload;
-    },
-    setIsSubFolderInputSubmitting(state, action: PayloadAction<boolean>) {
-      state.isSubFolderInputSubmitting = action.payload;
-    },
-  },
-});
-
 const fileSlice = createSlice({
   name: "file",
   initialState: {
@@ -245,7 +196,8 @@ const fileSlice = createSlice({
 export const { setLanguage } = languageSlice.actions;
 export const { setEditorHeight } = editorHeightSlice.actions;
 export const { setRightSideWidth } = rightSideWidthSlice.actions;
-export const { setCode, setIsRunning, setIsSaving } = codeSlice.actions;
+export const { setCode, setIsRunning, setIsSaving, setCodeSaveError, setIsCodeSaved } =
+  codeSlice.actions;
 export const { setSideBarWidth } = sideBarWidthSlice.actions;
 export const { setLanguages } = languagesSlice.actions;
 export const { setRunData } = runDataSlice.actions;
@@ -274,13 +226,6 @@ export const {
   setRenameFileId,
 } = fileSlice.actions;
 
-export const {
-  setSubFolderName,
-  setSubFolderError,
-  setIsSubFolderInputVisible,
-  setSubFolderParentId,
-} = subfolderSlice.actions;
-
 export const rootReducer = {
   language: languageSlice.reducer,
   languages: languagesSlice.reducer,
@@ -291,5 +236,4 @@ export const rootReducer = {
   runData: runDataSlice.reducer,
   folder: folderSlice.reducer,
   file: fileSlice.reducer,
-  subFolder: subfolderSlice.reducer,
 };

@@ -1,5 +1,21 @@
-export const LANGUAGES_VERSIONS = [
-  { language: "JavaScript", version: "18.15.0" },
-  { language: "TypeScript", version: "5.0.3" },
-  { language: "Python", version: "3.10.0" },
-];
+type TLanguage = {
+  language: string;
+  version: string;
+};
+type TFile = {
+  id: string;
+  name: string;
+  extension: string;
+  folder_id: string | null;
+  content: string;
+};
+
+type TFolder = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+};
+const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
+
+export type { TLanguage, TFile, TFolder };
+export { allowedLanguageExtensions };

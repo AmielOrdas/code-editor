@@ -1,286 +1,51 @@
 "use client";
 import CodeEditor from "@/components/CodeEditor";
 import AnimationWrapper from "@/components/wrappers/PageAnimation";
-import ProgLanguageSelector from "@/components/ProgLanguageSelector";
+import OutputArea from "@/components/OutputArea";
 import {
   setSideBarWidth,
   setEditorHeight,
-  setLanguage,
   setRightSideWidth,
-  setFolderError,
-  setFolderName,
-  setFolders,
-  setIsFolderInputVisible,
-  setIsFolderInputSubmitting,
-  setFileError,
-  setFileName,
-  setFiles,
-  setIsFileInputVisible,
-  setIsFileInputSubmitting,
-  setIsSubFolderInputVisible,
-  setSubFolderParentId,
-  setSubFolderName,
-  setSubFolderError,
+  setLanguages,
 } from "@/lib/redux/slice";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
 import NavbarEditor from "@/components/NavbarEditor";
-import Files from "@/components/Files";
-import FilesInput from "@/components/FileInput";
-import FolderInput from "@/components/FolderInput";
-import Folders from "@/components/Folders";
-import axios from "axios";
 import FolderTree from "@/components/FolderTree";
+import { fetchFiles, fetchFolders } from "@/lib/functions";
+import axios from "axios";
 
 export default function ResizableLayout() {
-  // const [sidebarWidth, setSideBarWidth] = useState(300); // px
-  // const [topHeight, setTopHeight] = useState(700); // px
-
-  // const [rightSideWidth, setRightSideWidth] = useState<number>(0); // New state for right-side width
-
-  type TFolders = {
-    id: string;
-    name: string;
-  };
   // States needed in adjusting the sizes of sidebar, editor part and the output part
   const editorHeight = useSelector((state: RootState) => state.editorHeight.value);
   const sideBarWidth = useSelector((state: RootState) => state.sideBarWidth.value);
   const rightSideWidth = useSelector((state: RootState) => state.rightSideWidth.value);
 
   // States needed in output area
-  const language = useSelector((state: RootState) => state.language.value);
   const output = useSelector((state: RootState) => state.runData.value);
-  const languages = useSelector((state: RootState) => state.languages.value);
 
-  // States needed in code area
-  const code = useSelector((state: RootState) => state.code.value);
-
-  // States needed for folder
-  const folderName = useSelector((state: RootState) => state.folder.name);
-  const folderError = useSelector((state: RootState) => state.folder.error);
-  const isFolderInputVisible = useSelector(
-    (state: RootState) => state.folder.isInputVisible
-  );
-  const folders = useSelector((state: RootState) => state.folder.folders);
-  const selectedFolderId = useSelector((state: any) => state.folder.selectedFolderId);
-
-  // States needed for files
-  const fileName = useSelector((state: RootState) => state.file.name);
-  const error = useSelector((state: RootState) => state.file.error);
-  const isSubmitting = useSelector((state: RootState) => state.file.isSubmitting);
-  const isFileInputVisible = useSelector((state: RootState) => state.file.isInputVisible);
-  const files = useSelector((state: RootState) => state.file.files);
-  console.log(isFolderInputVisible);
-  const isSubFolderInputVisible = useSelector(
-    (state: RootState) => state.subFolder.isSubFolderInputVisible
-  ); // Get visibility from Redux
+  // States needed to detect selectedFileId
   const selectedFileId = useSelector((state: RootState) => state.file.selectedFileId);
+
+  const buttonsRef = useRef<HTMLInputElement>(null);
+  const isMainFile = selectedFileId === process.env.NEXT_PUBLIC_WELCOME_FILE_ID;
 
   const dispatch = useDispatch();
 
-  // const [files, setFiles] = useState<TFiles[] | []>([]);
-
-  const inputFileRef = useRef<HTMLInputElement>(null); // Ref for the input element
-  const buttonsRef = useRef<HTMLInputElement>(null);
-  // const [folderName, setFolderName] = useState("");
-  // const [folders, setFolders] = useState<TFolders[] | []>([]);
-  // const [isFolderInputVisible, setIsFolderInputVisible] = useState(false);
-  // const folderInputRef = useRef<HTMLInputElement>(null);
-  // const [folderError, setFolderError] = useState("");
-
-  const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
-  // function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-  //   const input = event.target.value;
-  //   setFileName(input);
-  //   // Allow only valid characters: letters, numbers, dots, hyphens, underscores
-  //   const validNameRegex = /^[a-zA-Z0-9._-]+$/;
-
-  //   if (!input.trim()) {
-  //     setError("");
-  //     return;
-  //   } else if (!validNameRegex.test(input)) {
-  //     setError("File name must not contain special characters or spaces.");
-  //     return;
-  //   }
-
-  //   const lastDotIndex = input.lastIndexOf(".");
-  //   const extension = input.substring(lastDotIndex);
-  //   const baseName = input.substring(0, lastDotIndex).trim();
-
-  //   if (lastDotIndex === -1) {
-  //     setError("File extension is required (e.g., .js, .py, .ts, .cpp, .java)");
-  //     return;
-  //   } else if (!baseName) {
-  //     setError("");
-  //     return;
-  //   } else if (!allowedLanguageExtensions.includes(extension)) {
-  //     setError("Extension not allowed. Use .js, .py, .ts, .cpp, or .java");
-  //     return;
-  //   }
-
-  //   setError("");
-  // }
-
-  async function fetchFiles() {
-    try {
-      const response = await fetch("/api/files");
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to fetch files");
-      }
-
-      const { files } = await response.json();
-      dispatch(setFiles(files));
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      dispatch(setFiles([])); // Clear the files in case of an error
-    }
+  async function getLanguages() {
+    const { data } = await axios.get("/api/languages");
+    dispatch(setLanguages(data));
   }
 
-  async function fetchFolders() {
-    try {
-      const response = await fetch("/api/folders");
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to fetch folders");
-      }
-
-      const data = await response.json();
-      dispatch(setFolders(data.folders)); // Assuming you have state for storing folders
-    } catch (error) {
-      console.error("Error fetching folders:", error);
-      dispatch(setFolders([])); // Clear folders in case of error
-    }
-  }
-
-  async function handleAddFolder(name: string, parentId: string | null) {
-    if (isSubmitting) return; // Prevent multiple submissions
-
-    dispatch(setIsFolderInputSubmitting(true));
-
-    try {
-      // Make the API call to create the folder
-      // const response = await fetch("/api/folders", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     name: name,
-      //     parent_id: parentId || null,
-      //   }),
-      // });
-
-      const response = await axios.post("api/folders", {
-        name: name,
-        parent_id: parentId || null,
-      });
-
-      const data = response.data;
-
-      if (response.status === 201) {
-        dispatch(setFolderName("")); // Clear the folder input
-        dispatch(setIsFolderInputVisible(false)); // Hide the folder input field after successful creation
-        // dispatch(setSubFolderName("")); // Clear the folder input
-        // dispatch(setIsSubFolderInputVisible(false)); // Hide the subfolder input field after successful creation
-        fetchFolders(); // Refetch the folders to show in the sidebar
-      }
-    } catch (error: any) {
-      console.error("Error creating folder:", error);
-      dispatch(
-        setFolderError(
-          error.response.data.message || "An error occurred while creating the folder."
-        )
-      );
-      // dispatch(setSubFolderError("An error occurred while creating the folder."));
-    }
-
-    dispatch(setIsFolderInputSubmitting(false));
-  }
-
-  async function handleAddFile() {
-    // You can add extension validation later
-    console.log("File added!");
-
-    const extension = fileName.substring(fileName.lastIndexOf(".") + 1); // Get the extension
-
-    try {
-      // Make the API call to create the file
-      // const response = await fetch("/api/files", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     name: fileName,
-      //     folder_id: selectedFolderId || null, // null means root folder
-      //     content: "", // Assuming content is empty for now
-      //     extension: extension,
-      //   }),
-      // });
-
-      // const data = await response.json();
-      const response = await axios.post("/api/files", {
-        name: fileName,
-        folder_id: selectedFolderId || null, // null means root folder
-        content: "", // Assuming content is empty for now
-        extension: extension,
-      });
-
-      const data = response.data;
-      console.log(response);
-      if (response.status === 201) {
-        dispatch(setFileName(""));
-        dispatch(setIsFileInputVisible(false));
-        fetchFiles();
-      }
-    } catch (error: any) {
-      console.error("Error creating file:", error.response.data.message);
-
-      dispatch(
-        setFileError(
-          error.response.data.message || "An error occured when creating the file"
-        )
-      );
-    } finally {
-      dispatch(setFileName("")); // Always clear input, success or failure
-      dispatch(setIsFileInputSubmitting(false));
-    }
-  }
-  // function handleBlur() {
-  //   if (error || !fileName.trim()) {
-  //     setError("");
-  //     setFileName("");
-  //     setIsFileInputVisible(false);
-  //     return;
-  //   }
-  //   handleAddFile();
-  // }
-
-  // function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-  //   // Close input and return if user press enter without file name.
-  //   if (event.key === "Enter" && !fileName.trim()) {
-  //     setError("");
-  //     setFileName("");
-  //     setIsFileInputVisible(false);
-  //     return;
-  //     // Add file if user press enter without any errors
-  //   } else if (event.key === "Enter" && !error) {
-  //     handleAddFile(); // Create file when Enter key is pressed
-  //   }
-  // }
-  useEffect(function () {
-    fetchFiles();
-  }, []);
-
-  // Fetch folders when the component mounts
+  // Fetch folders, files, and languages when the component mounts
   useEffect(() => {
-    fetchFolders();
+    fetchFolders(dispatch);
+    fetchFiles(dispatch);
+    getLanguages();
   }, []); // Empty dependency array to call fetchFolders only once on mount
 
+  // Calculates the width of the right side area (editor and output area) everytime the sideBarWidth changes when user uses the vertical resizer.
   useEffect(() => {
     dispatch(setRightSideWidth(window.innerWidth - sideBarWidth));
   }, [sideBarWidth]);
@@ -292,44 +57,6 @@ export default function ResizableLayout() {
       dispatch(setSideBarWidth(0));
     }
   }
-
-  // function handleFolderInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-  //   const input = event.target.value;
-  //   const isValid = /^[a-zA-Z0-9_-]*$/.test(input); // only letters, numbers, hyphens, and underscores are allowed.
-  //   console.log(input);
-  //   setFolderName(input);
-  //   console.log(folderError);
-  //   if (!input.trim()) {
-  //     setFolderError("");
-  //     return;
-  //   } else if (!isValid) {
-  //     setFolderError(
-  //       "Folder name can only contain letters, numbers, dots, hyphens, and underscores."
-  //     );
-  //     return;
-  //   }
-  //   setFolderError(""); // clear error if input is valid
-  // }
-
-  // function handleFolderBlur() {
-  //   if (folderError || !folderName.trim()) {
-  //     setFolderError("");
-  //     setFolderName("");
-  //     setIsFolderInputVisible(false);
-  //     return;
-  //   }
-  // }
-
-  // function handleFolderKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-  //   if (event.key === "Enter" && !folderName.trim()) {
-  //     setFolderError("");
-  //     setIsFolderInputVisible(false);
-  //     return;
-  //     // Add file if user press enter without any errors
-  //   } else if (event.key === "Enter" && !folderError) {
-  //     handleAddFolder(); // Create file when Enter key is pressed
-  //   }
-  // }
 
   function onBottomBarResize(e: MouseEvent) {
     dispatch(setEditorHeight(e.clientY));
@@ -363,87 +90,9 @@ export default function ResizableLayout() {
           className="h-screen overflow-y-auto max-w-[500px] custom-scroll"
           style={{ width: `${sideBarWidth}px` }}
         >
-          <NavbarEditor
-            buttonsRef={buttonsRef}
-            // setIsFileInputVisible={setIsFileInputVisible}
-            // setIsFolderInputVisible={setIsFolderInputVisible}
-            // setFileName={setFileName}
-            // setFolderName={setFolderName}
-          />
-          {/*Show the file names here */}
-          {/* <div className="file-list mt-4">
-            {files.length > 0 ? (
-              <ul>
-                {files.map((file) => (
-                  <li key={file.id} className=" text-white">
-                    {file.name}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No files available</p>
-            )}
-          </div> */}
-          {/* <Files /> */}
-          {/* <div>
-            {folders.length > 0 ? (
-              <ul>
-                {folders.map((folder) => (
-                  <li key={folder.id} className="text-white">
-                    {folder.name}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No folders available</p>
-            )}
-          </div> */}
-          {/* <Folders /> */}
-          <FolderTree buttonsRef={buttonsRef} />
-          {/* Show the input field when FolderPlus is clicked */}
-          {/* {isFolderInputVisible && (
-            <div className="mt-4">
-              <input
-                type="text"
-                autoFocus
-                value={folderName}
-                onChange={handleFolderInputChange}
-                onBlur={handleFolderBlur}
-                onKeyDown={handleFolderKeyDown}
-                placeholder="Enter folder name"
-                className={clsx("w-full bg-[#121212] text-orangeCustom border-2", {
-                  "border-red-500": folderError,
-                  "border-white": !folderError,
-                })}
-                ref={folderInputRef}
-              />
-              <p className="text-red-500 text-sm mt-2">{folderError}</p>
-            </div>
-          )} */}
-          {/* <FilesInput /> */}
+          <NavbarEditor buttonsRef={buttonsRef} />
 
-          {/* Show the input field when FilePlus is clicked */}
-          {/* {isFileInputVisible && (
-            <div className="mt-4">
-              <input
-                type="text"
-                autoFocus
-                value={fileName}
-                onChange={handleFileInputChange}
-                disabled={isSubmitting}
-                onBlur={handleBlur} // Call handleBlur when input loses focus
-                onKeyDown={handleKeyDown} // Call handleAddFile when Enter is pressed
-                placeholder={"Enter file name (e.g., file.cpp)"}
-                className={clsx("w-full bg-[#121212] text-orangeCustom border-2", {
-                  "border-red-500": error,
-                  "border-white": !error,
-                  "opacity-50 cursor-not-allowed": isSubmitting,
-                })}
-                ref={inputFileRef}
-              />
-              <p className="text-red-500 text-sm mt-2">{error}</p>
-            </div>
-          )} */}
+          <FolderTree buttonsRef={buttonsRef} />
         </div>
 
         {/* Draggable vertical resizer */}
@@ -470,10 +119,18 @@ export default function ResizableLayout() {
 
           {/* Bottom Section */}
           <div className="flex flex-col overflow-y-auto max-h-[300px] custom-scroll">
-            <ProgLanguageSelector />
+            <OutputArea />
             <h1 className="text-white whitespace-pre-wrap break-words p-2">
               {output ||
-                (selectedFileId ? "Click run code to see output" : "No File Selected")}
+                (isMainFile ? (
+                  <p className="text-red-500">
+                    welcome.py is not allowed for code execution
+                  </p>
+                ) : selectedFileId ? (
+                  "Click run code to see the output"
+                ) : (
+                  "No File selected"
+                ))}
             </h1>
           </div>
         </div>

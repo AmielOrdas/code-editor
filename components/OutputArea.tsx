@@ -1,44 +1,22 @@
 "use client";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import {
-  setSideBarWidth,
-  setEditorHeight,
-  setLanguage,
-  setRightSideWidth,
-  setLanguages,
   setRunData,
-  setSelectedFolderId,
+  setCodeSaveError,
   setIsRunning,
   setIsSaving,
-  setFiles,
+  setIsCodeSaved,
 } from "@/lib/redux/slice";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/lib/redux/store";
-
-import { useEffect } from "react";
 import axios from "axios";
 import { Button } from "./ui/button";
 import Spinner from "./SpinnerComponent";
-
-type TLanguages = {
-  language: string;
-  version: string;
-};
-type TFile = {
-  id: string;
-  name: string;
-  extension: string;
-  folder_id: string | null;
-  content: string;
-};
+import { fetchFiles } from "@/lib/functions";
+import { renameFileSchema } from "@/lib/zod";
+import { TFile, TLanguage } from "@/lib/Types&Constants";
+import { Play, Save } from "lucide-react";
 
 export default function ProgLanguageSelector({}: {}) {
   const languages = useSelector((state: RootState) => state.languages.value);
@@ -47,8 +25,11 @@ export default function ProgLanguageSelector({}: {}) {
   const isCodeRunning = useSelector((state: RootState) => state.code?.isRunning);
   const isCodeSaving = useSelector((state: RootState) => state.code.isSaving);
   const files = useSelector((state: RootState) => state.file.files);
+  const error = useSelector((state: RootState) => state.code.codeError);
+  const isCodeSaved = useSelector((state: RootState) => state.code.isSaved);
 
   const selectedFileData = files.find((file: TFile) => file.id === selectedFileId);
+  const isMainFile = selectedFileId === process.env.NEXT_PUBLIC_WELCOME_FILE_ID;
 
   const dispatch = useDispatch();
 
@@ -60,33 +41,6 @@ export default function ProgLanguageSelector({}: {}) {
     cpp: "c++",
   };
 
-  async function fetchFiles() {
-    try {
-      const response = await fetch("/api/files");
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to fetch files");
-      }
-
-      const { files } = await response.json();
-      dispatch(setFiles(files));
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      dispatch(setFiles([])); // Clear the files in case of an error
-    }
-  }
-
-  async function getLanguages() {
-    const { data } = await axios.get("/api/languages");
-
-    dispatch(setLanguages(data));
-  }
-
-  useEffect(() => {
-    getLanguages();
-  }, []);
-  console.log(languages);
   async function handleRunCode() {
     if (!selectedFileId || !code) return;
     dispatch(setIsRunning(true));
@@ -101,7 +55,7 @@ export default function ProgLanguageSelector({}: {}) {
 
     // Find language entry that matches the file extension
     const languagedDetected = languages.find(
-      (lang: TLanguages) => lang.language.toLowerCase() === languageName
+      (lang: TLanguage) => lang.language.toLowerCase() === languageName
     );
 
     if (!languagedDetected) {
@@ -133,6 +87,18 @@ export default function ProgLanguageSelector({}: {}) {
     if (!selectedFileId) return;
     dispatch(setIsSaving(true));
 
+    const parsed = renameFileSchema.safeParse({
+      id: selectedFileId,
+      name: selectedFileData?.name,
+      extension: selectedFileData?.extension,
+      content: code,
+    });
+
+    if (!parsed.success) {
+      const errorMessage = parsed.error.errors[0]?.message;
+      dispatch(setCodeSaveError(errorMessage));
+    }
+
     try {
       const response = await axios.patch("/api/files", {
         id: selectedFileId,
@@ -142,21 +108,42 @@ export default function ProgLanguageSelector({}: {}) {
       });
 
       console.log("File saved successfully:", response.data);
-    } catch (error) {
+      dispatch(setIsCodeSaved(true));
+    } catch (error: any) {
       console.error("Failed to save file:", error);
+      dispatch(setCodeSaveError(error.response.data.message));
     }
     dispatch(setIsSaving(false));
-    fetchFiles();
+    setTimeout(() => dispatch(setIsCodeSaved(false)), 2000);
+
+    fetchFiles(dispatch);
   }
 
   return (
     <div className="flex space-x-5">
-      <Button className="border border-white cursor-pointer" onClick={handleSaveCode}>
+      <Button
+        className="border border-white cursor-pointer"
+        onClick={handleSaveCode}
+        disabled={isCodeSaving || isMainFile}
+      >
+        <Save />
         {isCodeSaving && <Spinner />}
-        {isCodeSaving ? "Saving..." : "Save Code"}
+        {error}
+        {isCodeSaving ? (
+          "Saving..."
+        ) : isCodeSaved ? (
+          <p className="text-green-500">Saved </p>
+        ) : (
+          "Save Code"
+        )}
       </Button>
 
-      <Button className="border border-white cursor-pointer" onClick={handleRunCode}>
+      <Button
+        className="border border-white cursor-pointer"
+        onClick={handleRunCode}
+        disabled={isCodeRunning || isMainFile}
+      >
+        <Play />
         {isCodeRunning && <Spinner />}
         {isCodeRunning ? "Running..." : "Run Code"}
       </Button>

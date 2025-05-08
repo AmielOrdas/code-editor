@@ -9,11 +9,12 @@ import {
   setFileError,
   setIsFileInputVisible,
   setIsFileInputSubmitting,
-  setFiles,
 } from "@/lib/redux/slice";
 import axios from "axios";
+import { fetchFiles } from "@/lib/functions";
+
+import { createFileSchema } from "@/lib/zod";
 export default function FileInput() {
-  const dispatch = useDispatch();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fileName = useSelector((state: RootState) => state.file.name);
@@ -21,44 +22,42 @@ export default function FileInput() {
   const isSubmitting = useSelector((state: RootState) => state.file.isSubmitting);
   const isFileInputVisible = useSelector((state: RootState) => state.file.isInputVisible);
   const selectedFolderId = useSelector((state: any) => state.folder.selectedFolderId);
-  const allowedLanguageExtensions = [".js", ".py", ".ts", ".cpp", ".java"];
 
-  async function fetchFiles() {
-    try {
-      const response = await fetch("/api/files");
+  const dispatch = useDispatch();
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to fetch files");
-      }
-
-      const { files } = await response.json();
-      dispatch(setFiles(files));
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      dispatch(setFiles([])); // Clear the files in case of an error
-    }
-  }
   async function handleAddFile() {
-    // You can add extension validation later
-    console.log("File added!");
     dispatch(setIsFileInputSubmitting(true));
     const extension = fileName.substring(fileName.lastIndexOf(".") + 1); // Get the extension
 
+    // Validate file data using Zod schema
+    const parsed = createFileSchema.safeParse({
+      name: fileName,
+      folder_id: selectedFolderId || "",
+      content: "",
+      extension: extension,
+    });
+
+    if (!parsed.success) {
+      // Get the first error message from the Zod validation
+      const errorMessage = parsed.error.errors[0]?.message;
+      dispatch(setFileError(errorMessage || "Invalid file data"));
+      dispatch(setIsFileInputSubmitting(false));
+      return;
+    }
+    console.log(parsed.success);
     try {
       const response = await axios.post("/api/files", {
         name: fileName,
-        folder_id: selectedFolderId || null, // null means root folder
-        content: "", // Assuming content is empty for now
+        folder_id: selectedFolderId || "", // null means below main folder
+        content: "",
         extension: extension,
       });
 
-      const data = response.data;
       console.log(response);
       if (response.status === 201) {
         dispatch(setFileName(""));
         dispatch(setIsFileInputVisible(false));
-        fetchFiles();
+        fetchFiles(dispatch);
       }
     } catch (error: any) {
       console.error("Error creating file:", error.response.data.message);
@@ -68,44 +67,31 @@ export default function FileInput() {
           error.response.data.message || "An error occured when creating the file"
         )
       );
-    } finally {
-      dispatch(setIsFileInputSubmitting(false));
     }
+    dispatch(setIsFileInputSubmitting(false));
   }
 
   function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.target.value;
     dispatch(setFileName(input));
+    const extension = input.substring(fileName.lastIndexOf(".") + 1); // Get the extension
 
-    // Allow only valid characters: letters, numbers, dots, hyphens, underscores
-    const validNameRegex = /^[a-zA-Z0-9._-]+$/;
+    const parsed = createFileSchema.safeParse({
+      name: input,
+      folder_id: "", // Use the actual folder ID here if needed
+      content: "", // Use the actual content here if needed
+      extension: extension,
+    });
 
-    if (!input.trim()) {
-      dispatch(setFileError(""));
-      return;
-    } else if (!validNameRegex.test(input)) {
-      dispatch(setFileError("File name must not contain special characters or spaces."));
-      return;
-    }
+    if (!parsed.success) {
+      // Get the first error message
+      const errorMessage = parsed.error.errors[0]?.message;
 
-    const lastDotIndex = input.lastIndexOf(".");
-    const extension = input.substring(lastDotIndex);
-    const baseName = input.substring(0, lastDotIndex).trim();
-
-    if (lastDotIndex === -1) {
-      dispatch(
-        setFileError("File extension is required (e.g., .js, .py, .ts, .cpp, .java)")
-      );
-      return;
-    }
-
-    if (!baseName) {
-      dispatch(setFileError("Extension only is not allowed"));
-      return;
-    }
-
-    if (!allowedLanguageExtensions.includes(extension)) {
-      dispatch(setFileError("Extension not allowed. Use .js, .py, .ts, .cpp, or .java"));
+      if (errorMessage === "File name is required") {
+        dispatch(setFileError(""));
+      } else {
+        dispatch(setFileError(errorMessage));
+      }
       return;
     }
 

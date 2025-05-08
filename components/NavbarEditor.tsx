@@ -23,9 +23,10 @@ function NavbarEditor({
   buttonsRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const router = useRouter();
-  const selectedFolderId = useSelector(
-    (state: RootState) => state.folder.selectedFolderId
-  ); // Get selected folder ID
+  const sideBarWidth = useSelector((state: RootState) => state.sideBarWidth.value);
+
+  const isSideBarWidthSmall = sideBarWidth < 150;
+
   const dispatch = useDispatch();
 
   function handleFilePlusClick() {
@@ -34,36 +35,15 @@ function NavbarEditor({
     dispatch(setFolderName(""));
     dispatch(setFileName(""));
     dispatch(setRenameFolderId(""));
-    console.log("HELLO");
   }
 
   function handleFolderPlusClick() {
-    // if (selectedFolderId) {
-    //   console.log(selectedFolderId);
-    //   dispatch(setIsFolderInputVisible(true));
-    //   return;
-    // } else {
-    //   dispatch(setIsFolderInputVisible(true));
-    // }
     dispatch(setIsFolderInputVisible(true));
 
     dispatch(setIsFileInputVisible(false));
     dispatch(setRenameFileId(""));
     dispatch(setRenameFileId(""));
     dispatch(setRenameFolderId(""));
-
-    // if (selectedFolderId) {
-    //   // dispatch(setIsSubFolderInputVisible(false));
-    //   dispatch(setIsFolderInputVisible(true));
-    //   dispatch(setFolderName(""));
-
-    //   dispatch(setIsFileInputVisible(false));
-    //   dispatch(setFileName(""));
-    // } else {
-    //   dispatch(setIsFolderInputVisible(true));
-    //   dispatch(setIsFileInputVisible(false));
-    //   dispatch(setFileName(""));
-    // }
   }
 
   return (
@@ -72,7 +52,7 @@ function NavbarEditor({
       <div className=" flex items-center justify-center ">
         <ArrowLeft className="cursor-pointer" onClick={() => router.push("/")} />
       </div>
-      <Image src={LogoBlack} alt={""} width={40} height={40} />
+      {isSideBarWidthSmall || <Image src={LogoBlack} alt={""} width={40} height={40} />}
       {/* Right Buttons */}
       <div className="flex space-x-3" ref={buttonsRef}>
         <FolderPlusIcon className="cursor-pointer" onClick={handleFolderPlusClick} />
