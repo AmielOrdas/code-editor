@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ newFolder: result[0] }, { status: 201 });
   } catch (error: unknown) {
-    console.log(error);
+    console.error(error);
     if (error instanceof Error && typeof error === "object" && "constraint" in error) {
       if (
         error.constraint === "unique_root_folder_names" ||

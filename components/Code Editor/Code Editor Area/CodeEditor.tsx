@@ -34,7 +34,6 @@ export default function CodeEditor() {
   }
 
   function getLanguageFromExtension(extension: string | null | undefined): string {
-    console.log(extension);
     switch ((extension || "").toLowerCase()) {
       case "js":
         return "javascript";

@@ -69,13 +69,11 @@ export default function OutputArea() {
       code: code,
     };
 
-    console.log(payload);
-
     try {
       const response = await axios.post("/api/execute", payload);
       const { data } = response.data;
       const { output } = data;
-      console.log(output);
+
       dispatch(setRunData(output));
     } catch (error) {
       console.error("Error executing code:", error);

@@ -46,7 +46,7 @@ export default function FileInput() {
       dispatch(setIsFileInputSubmitting(false));
       return;
     }
-    console.log(parsed.success);
+
     try {
       const response = await axios.post("/api/files", {
         name: fileName,
@@ -55,7 +55,6 @@ export default function FileInput() {
         extension: extension,
       });
 
-      console.log(response);
       if (response.status === 201) {
         dispatch(setFileName(""));
         dispatch(setIsFileInputVisible(false));

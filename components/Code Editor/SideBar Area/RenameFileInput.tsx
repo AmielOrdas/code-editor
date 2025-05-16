@@ -43,8 +43,6 @@ export default function RenameInput() {
   }
 
   async function handleRenameFile() {
-    // You can add extension validation later
-    console.log("File added!");
     dispatch(setIsFileRenameInputSubmitting(true));
     const extension = fileName.substring(fileName.lastIndexOf(".") + 1); // Get the extension
 
@@ -75,7 +73,6 @@ export default function RenameInput() {
         extension: extension,
       });
 
-      console.log(response);
       if (response.status === 200) {
         dispatch(setFileName(""));
         dispatch(setRenameFileId(""));

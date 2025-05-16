@@ -45,7 +45,6 @@ export default function Files({
   function handleFileClick(fileId: string) {
     dispatch(setSelectedFileId(fileId));
     dispatch(setSelectedFolderId(""));
-    console.log(selectedFileId);
   }
 
   function HandleIcon(extension: string) {
@@ -93,6 +92,7 @@ export default function Files({
         });
 
         if (response.status === 200) {
+          dispatch(setSelectedFileId(""));
           await fetchFiles(dispatch);
         }
       } catch (error: unknown) {
